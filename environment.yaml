@@ -1,13 +1,14 @@
-name: world_on_rails
+#name: world_on_rails
+name: cbs2
 channels:
   - pytorch
   - anaconda
   - defaults
 dependencies:
-  - cudatoolkit==10.1
+  #- cudatoolkit==10.1
   - pip>=21.0
   - python=3.7.9
-  - pytorch==1.4.0
+  #- pytorch==1.4.0
   - pip:
     - dictor
     - lmdb
@@ -27,3 +28,6 @@ dependencies:
     - six
     - wandb
     - xmlschema
+    
+# Then run ~/anaconda3/envs/cbs2/bin/pip install torch==1.4.0 torchvision==0.5.0
+    
