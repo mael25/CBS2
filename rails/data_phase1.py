@@ -11,8 +11,8 @@ def main(args):
     # route = 'assets/routes_training/route_10.xml'
 
     args.agent = 'autoagents/collector_agents/q_collector' # Use 'viz_collector' for collecting pretty images
-    # args.agent_config = 'config.yaml'
-    args.agent_config = 'experiments/config_nocrash.yaml'
+    args.agent_config = 'dataset/config_data_collection.yaml'
+    #args.agent_config = 'experiments/config_nocrash.yaml'
 
     # args.agent = 'autoagents/collector_agents/lidar_q_collector'
     # args.agent_config = 'config_lidar.yaml'
@@ -27,7 +27,7 @@ def main(args):
         checkpoint = f'results/{i:02d}_{args.checkpoint}'
         runner = ScenarioRunner.remote(args, scenario_class, scenario, route, checkpoint=checkpoint, town=town, port=port, tm_port=tm_port)
         jobs.append(runner.run.remote())
-    
+
     ray.wait(jobs, num_returns=args.num_runners)
 
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     parser.add_argument("--checkpoint", type=str,
                         default='simulation_results.json',
                         help="Path to checkpoint used for saving statistics and resuming")
-    
+
     args = parser.parse_args()
-    
+
     main(args)

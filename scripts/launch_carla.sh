@@ -6,6 +6,7 @@ do
     fuser $port/tcp -k
     fuser $((port + 1))/tcp -k
     fuser $((port + 2))/tcp -k
-    $HOME/CarlaUE4.sh -world-port=$port -vulkan -world-port=$port &
+    #$HOME/CarlaUE4.sh -world-port=$port -vulkan -world-port=$port &
+    $CARLA_ROOT/CarlaUE4.sh -world-port=$port &
 done
 wait

@@ -4,7 +4,7 @@ def main(args):
 
     town = args.town
     weather = args.weather
-    
+
     port = args.port
     tm_port = port + 2
     runner = NoCrashEvalRunner(args, town, weather, port=port, tm_port=tm_port)
@@ -17,11 +17,13 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    
+
     # Agent configs
-    parser.add_argument('--agent', default='autoagents/image_agent')
-    parser.add_argument('--agent-config', default='experiments/config_nocrash.yaml')
-    
+    #parser.add_argument('--agent', default='autoagents/image_agent')
+    parser.add_argument('--agent', default='autoagents/lbc_agent')
+    #parser.add_argument('--agent-config', default='experiments/config_nocrash.yaml')
+    parser.add_argument('--agent-config', default='results/config_nocrash_my.yaml')
+
     # Benchmark configs
     parser.add_argument('--town', required=True, choices=['Town01', 'Town02'])
     parser.add_argument('--weather', required=True, choices=['train', 'test'])
@@ -32,7 +34,7 @@ if __name__ == '__main__':
                         help='Seed used by the TrafficManager (default: 0)')
     parser.add_argument('--timeout', default="60.0",
                         help='Set the CARLA client timeout value in seconds')
-                        
+
     parser.add_argument('--port', type=int, default=2000)
 
     parser.add_argument('--repetitions',
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument("--checkpoint", type=str,
                         default='./simulation_results.json',
                         help="Path to checkpoint used for saving statistics and resuming")
-    
+
     args = parser.parse_args()
-    
+
     main(args)

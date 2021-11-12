@@ -18,6 +18,8 @@ from rails.bellman import BellmanUpdater
 from rails.models import EgoModel
 from autoagents.waypointer import Waypointer
 
+from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
+
 def get_entry_point():
     return 'QCollector'
 
@@ -55,19 +57,19 @@ class QCollector(AutonomousAgent):
 
         self.track = Track.MAP
         self.num_frames = 0
-        
+
         with open(path_to_conf_file, 'r') as f:
             config = yaml.safe_load(f)
-        
+
         for key, value in config.items():
             setattr(self, key, value)
-        
+
         device = torch.device('cuda')
         ego_model = EgoModel(1./FPS*(self.num_repeat+1)).to(device)
         ego_model.load_state_dict(torch.load(self.ego_model_dir))
         ego_model.eval()
         BellmanUpdater.setup(config, ego_model, device=device)
-        
+
         self.vizs      = []
         self.wide_rgbs = []
         self.narr_rgbs = []
@@ -79,6 +81,7 @@ class QCollector(AutonomousAgent):
         self.rots = []
         self.spds = []
         self.cmds = []
+        self.tlss = []
 
         self.waypointer = None
 
@@ -87,8 +90,10 @@ class QCollector(AutonomousAgent):
 
         self.noiser = OrnsteinUhlenbeckActionNoise(dt=1/FPS)
         self.prev_steer = 0
-        
+
         self.stop_count = 0
+
+        self.ego_actor = None
 
     def destroy(self):
         if len(self.lbls) == 0:
@@ -115,23 +120,23 @@ class QCollector(AutonomousAgent):
             txn.put('len'.encode(), str(length).encode())
 
             for i in range(length):
-                
+
                 for idx in range(len(self.camera_yaws)):
                     txn.put(
                         f'wide_rgb_{idx}_{i:05d}'.encode(),
                         np.ascontiguousarray(self.wide_rgbs[i][idx]).astype(np.uint8),
                     )
-    
+
                     txn.put(
                         f'narr_rgb_{idx}_{i:05d}'.encode(),
                         np.ascontiguousarray(self.narr_rgbs[i][idx]).astype(np.uint8),
                     )
-    
+
                     txn.put(
                         f'wide_sem_{idx}_{i:05d}'.encode(),
                         np.ascontiguousarray(self.wide_sems[i][idx]).astype(np.uint8),
                     )
-                    
+
                     txn.put(
                         f'narr_sem_{idx}_{i:05d}'.encode(),
                         np.ascontiguousarray(self.narr_sems[i][idx]).astype(np.uint8),
@@ -157,12 +162,16 @@ class QCollector(AutonomousAgent):
                     np.ascontiguousarray(self.spds[i]).astype(np.float32)
                 )
 
-                
+
                 txn.put(
                     f'cmd_{i:05d}'.encode(),
                     np.ascontiguousarray(self.cmds[i]).astype(np.float32)
                 )
 
+                txn.put(
+                    f'tls_{i:05d}'.encode(),
+                    np.ascontiguousarray(self.tlss[i]).astype(np.uint8),
+                )
         self.vizs.clear()
         self.wide_rgbs.clear()
         self.narr_rgbs.clear()
@@ -173,7 +182,8 @@ class QCollector(AutonomousAgent):
         self.rots.clear()
         self.spds.clear()
         self.cmds.clear()
-        
+        self.tlss.clear()
+
         lmdb_env.close()
 
     def sensors(self):
@@ -183,7 +193,7 @@ class QCollector(AutonomousAgent):
             {'type': 'sensor.speedometer', 'id': 'EGO'},
             {'type': 'sensor.other.gnss', 'x': 0., 'y': 0.0, 'z': self.camera_z, 'id': 'GPS'},
         ]
-        
+
         # Add sensors
         for i, yaw in enumerate(self.camera_yaws):
             x = self.camera_x*math.cos(yaw*math.pi/180)
@@ -196,23 +206,22 @@ class QCollector(AutonomousAgent):
             'width': 384, 'height': 240, 'fov': 50, 'id': f'Narrow_RGB_{i}'})
             sensors.append({'type': 'sensor.camera.semantic_segmentation', 'x': x, 'y': y, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': yaw,
             'width': 384, 'height': 240, 'fov': 50, 'id': f'Narrow_SEG_{i}'})
-            
+
         return sensors
 
     def run_step(self, input_data, timestamp):
-        
         wide_rgbs = []
         narr_rgbs = []
         wide_sems = []
         narr_sems = []
 
         for i in range(len(self.camera_yaws)):
-            
+
             _, wide_rgb = input_data.get(f'Wide_RGB_{i}')
             _, narr_rgb = input_data.get(f'Narrow_RGB_{i}')
             _, wide_sem = input_data.get(f'Wide_SEG_{i}')
             _, narr_sem = input_data.get(f'Narrow_SEG_{i}')
-            
+
             wide_rgbs.append(wide_rgb[...,:3])
             narr_rgbs.append(narr_rgb[...,:3])
             wide_sems.append(wide_sem)
@@ -233,6 +242,14 @@ class QCollector(AutonomousAgent):
         yaw = ego.get('rot')[-1]
         spd = ego.get('spd')
         loc = ego.get('loc')
+
+        if self.ego_actor is None:
+            vehicles = CarlaDataProvider._client.get_world().get_actors().filter('vehicle.*')
+            for v in vehicles:
+                if v.attributes['role_name'] == 'hero':
+                    self.ego_actor = v
+                    break;
+        tls = 1 if (CarlaDataProvider.get_next_traffic_light(self.ego_actor, False).get_state() ==  0) else 0
 
         delta_locs, delta_yaws, next_spds = BellmanUpdater.compute_table(yaw/180*math.pi)
 
@@ -265,12 +282,13 @@ class QCollector(AutonomousAgent):
         # action = int(action_values.argmax())
 
         steer, throt, brake = map(float, BellmanUpdater._actions[action])
-        
+
         if self.noise_collect:
             steer += self.noiser()
 
         if len(self.vizs) > self.num_per_flush:
             self.flush_data()
+        print('Flush length: {}\n'.format(len(self.vizs)))
 
         rgb = np.concatenate([wide_rgbs[0], narr_rgbs[0]], axis=1)
         spd = ego.get('spd')
@@ -284,7 +302,7 @@ class QCollector(AutonomousAgent):
             self.stop_count += 1
         else:
             self.stop_count = 0
-        
+
         if cmd_value in [4,5]:
             actual_steer = steer
         else:
@@ -304,9 +322,10 @@ class QCollector(AutonomousAgent):
             self.rots.append(yaw)
             self.spds.append(spd)
             self.cmds.append(cmd_value)
-        
+            self.tlss.append(tls)
+
         self.num_frames += 1
-        
+
         return carla.VehicleControl(steer=actual_steer, throttle=throt, brake=brake)
 
 
