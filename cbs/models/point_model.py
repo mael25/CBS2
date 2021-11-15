@@ -35,9 +35,10 @@ class PointModel(nn.Module):
             SpatialSoftmax(height//4, width//4),
         )
 
-    def forward(self, bev, spd):
-        bev = (bev>0).float()
-        inputs = self.backbone(bev/255.)
+    def forward(self, sem_channels_tls, spd):
+        #bev = (bev>0).float()
+        #inputs = self.backbone(bev/255.)
+        inputs = self.backbone(sem_channels_tls)
         spd_embds = self.spd_encoder(spd[:,None])[...,None,None].repeat(1,1,self.kh,self.kw)
         outputs = self.upconv(torch.cat([inputs, spd_embds], 1))
 

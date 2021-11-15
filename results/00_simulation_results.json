@@ -1,0 +1,137 @@
+{
+    "_checkpoint": {
+        "global_record": {},
+        "progress": [
+            3,
+            76
+        ],
+        "records": [
+            {
+                "index": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [],
+                    "route_timeout": [],
+                    "stop_infraction": [],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 64.35000095888972,
+                    "duration_system": 446.62077045440674,
+                    "route_length": 737.4217028017997
+                },
+                "route_id": "RouteScenario_0",
+                "scores": {
+                    "score_composed": 36.09326870316063,
+                    "score_penalty": 1.0,
+                    "score_route": 36.09326870316063
+                },
+                "status": "Failed - Agent crashed"
+            },
+            {
+                "index": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [],
+                    "route_timeout": [],
+                    "stop_infraction": [],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 34.00000050663948,
+                    "duration_system": 237.31049823760986,
+                    "route_length": 544.0356046996249
+                },
+                "route_id": "RouteScenario_1",
+                "scores": {
+                    "score_composed": 15.19486205152442,
+                    "score_penalty": 1.0,
+                    "score_route": 15.19486205152442
+                },
+                "status": "Failed - Agent crashed"
+            },
+            {
+                "index": 2,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [],
+                    "route_timeout": [],
+                    "stop_infraction": [],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 21.90000032633543,
+                    "duration_system": 117.7024290561676,
+                    "route_length": 936.7810583237248
+                },
+                "route_id": "RouteScenario_2",
+                "scores": {
+                    "score_composed": 15.702107177038418,
+                    "score_penalty": 1.0,
+                    "score_route": 15.702107177038418
+                },
+                "status": "Failed - Agent crashed"
+            },
+            {
+                "index": 3,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [],
+                    "route_timeout": [],
+                    "stop_infraction": [],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 7.600000113248825,
+                    "duration_system": 696.7367601394653,
+                    "route_length": 1014.5683614271728
+                },
+                "route_id": "RouteScenario_3",
+                "scores": {
+                    "score_composed": 5.662914693364087,
+                    "score_penalty": 1.0,
+                    "score_route": 5.662914693364087
+                },
+                "status": "Failed - Simulation crashed"
+            }
+        ]
+    },
+    "eligible": false,
+    "entry_status": "Crashed",
+    "labels": [],
+    "sensors": [
+        "carla_collision",
+        "carla_map",
+        "carla_speedometer",
+        "carla_gnss",
+        "carla_stich_rgb",
+        "carla_stich_sem",
+        "carla_camera",
+        "carla_sem",
+        "carla_stich_rgb",
+        "carla_stich_sem",
+        "carla_camera",
+        "carla_sem",
+        "carla_stich_rgb",
+        "carla_stich_sem",
+        "carla_camera",
+        "carla_sem"
+    ],
+    "values": []
+}

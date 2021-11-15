@@ -15,8 +15,8 @@ crop_bottom: 8
 main_data_dir: dataset/111121/main
 # Location of privileged agent used to train the distilled agent in (lbc.train_phase1.py)
 # Note: the privileged agent is saved in the wandb logger_dir (lbc.train_phase0.py)
-bev_model_dir: lbc/experiments/111121/bev_model_20.th
+bev_model_dir: cbs/experiments/111121/bev_model_20.th
 # Location of distilled agent used to evaluate model (???.py)
 # Note: the distilled agent is saved in the wandb logger_dir (lbc.train_phase1.py)
-rgb_model_dir: lbc/experiments/111121/rgb_model_20.th
+rgb_model_dir: cbs/experiments/111121/rgb_model_20.th
 

@@ -57,7 +57,7 @@ def visualize_big(rgb, yaw, control, speed, cmd=None, lbl=None, sem=None, text_a
 
     return canvas
 
-def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=None, map=None, sem=None, lidar=None, text_args=(cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)):
+def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=None, map=None, sem=None, lidar=None, tls=None, text_args=(cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)):
     """
     0 road
     1 lane
@@ -75,7 +75,7 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
         h, w = lbl.shape[:2]
         cv2.arrowedLine(lbl, (w//2,h//2), (w//2+int(ori_x*10),h//2+int(ori_y*10)), (255,128,0), 3)
         canvas = np.concatenate([canvas, cv2.resize(lbl, (H,H))], axis=1)
-    
+
     if map is not None:
         map = visualize_birdview_big(map, num_channels=3)
         H, W = canvas.shape[:2]
@@ -87,11 +87,11 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
             cv2.circle(map, (px, py), 2, (0,0,0), -1)
         canvas = np.concatenate([canvas, cv2.resize(map, (H,H))], axis=1)
 
-        
+
     if sem is not None:
         sem_viz = visualize_semantic(sem)
         canvas = np.concatenate([sem_viz, canvas], axis=1)
-    
+
     if lidar is not None:
         lidar_viz = lidar_to_bev(lidar).astype(np.uint8)
         lidar_viz = cv2.cvtColor(lidar_viz,cv2.COLOR_GRAY2RGB)
@@ -99,21 +99,24 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
 
     cv2.putText(canvas, f'speed: {speed:.3f}m/s', (4, 10), *text_args)
     cv2.putText(
-        canvas, 
+        canvas,
         f'steer: {control[0]:.3f} throttle: {control[1]:.3f} brake: {control[2]:.3f}',
         (4, 20), *text_args
     )
     if cmd is not None:
         cv2.putText(canvas, 'cmd: {}'.format({1:'left',2:'right',3:'straight',4:'follow',5:'change left',6:'change right'}.get(cmd)), (4, 30), *text_args)
-    
+
     if red is not None:
         cv2.putText(canvas, 'red: {}'.format(red), (4, 40), *text_args)
+
+    if tls is not None:
+        cv2.putText(canvas, 'tls: {}'.format(tls), (4, 40), *text_args)
 
     return canvas
 
 
 def visualize_birdview(birdview, no_show=[9], num_channels=12):
-    
+
     h, w = birdview.shape[:2]
     canvas = np.zeros((h, w, 3), dtype=np.uint8)
     canvas[...] = BACKGROUND
@@ -122,7 +125,7 @@ def visualize_birdview(birdview, no_show=[9], num_channels=12):
         if i in no_show:
             continue
         canvas[birdview[:,:,i] > 0] = COLORS[i]
-    
+
     return canvas
 
 def visualize_birdview_big(birdview, num_channels=3):
@@ -174,5 +177,13 @@ def filter_sem(sem, labels=[4,6,7,8,10]):
     resem = np.zeros_like(sem)
     for i, label in enumerate(labels):
         resem[sem==label] = i+1
-    
+
+    return resem
+
+def filter_sem_cbs_per_channel(sem, tls, labels=[4,6,7,8,10]):
+    resem = np.zeros((sem.shape[0], sem.shape[1], len(labels)+1))
+    for i, label in enumerate(labels):
+         resem[..., i][sem == label] = 1
+    resem[..., len(labels)] = tls
+
     return resem

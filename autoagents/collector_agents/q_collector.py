@@ -288,11 +288,10 @@ class QCollector(AutonomousAgent):
 
         if len(self.vizs) > self.num_per_flush:
             self.flush_data()
-        print('Flush length: {}\n'.format(len(self.vizs)))
 
         rgb = np.concatenate([wide_rgbs[0], narr_rgbs[0]], axis=1)
         spd = ego.get('spd')
-        self.vizs.append(visualize_obs(rgb, yaw/180*math.pi, (steer, throt, brake), spd, cmd=cmd.value, lbl=lbl_copy))
+        self.vizs.append(visualize_obs(rgb, yaw/180*math.pi, (steer, throt, brake), spd, cmd=cmd.value, lbl=lbl_copy, sem=sem, tls=tls))
 
         if col:
             self.flush_data()
