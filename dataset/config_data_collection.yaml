@@ -13,7 +13,7 @@ num_steers: 9
 num_throts: 3
 num_repeat: 4
 num_ignore_first: 50
-num_per_flush: 300
+num_per_flush: 1000
 num_plan: 5
 thro_rew: 1.0
 brak_rew: 5.0

@@ -180,10 +180,8 @@ def filter_sem(sem, labels=[4,6,7,8,10]):
 
     return resem
 
-def filter_sem_cbs_per_channel(sem, tls, labels=[4,6,7,8,10]):
-    resem = np.zeros((sem.shape[0], sem.shape[1], len(labels)+1))
+def filter_sem_cbs_per_channel(sem, tls, labels=[4,6,7,8,10,18]):
+    resem = np.zeros((sem.shape[0], sem.shape[1], len(labels)))
     for i, label in enumerate(labels):
          resem[..., i][sem == label] = 1
-    resem[..., len(labels)] = tls
-
     return resem

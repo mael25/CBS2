@@ -11,7 +11,7 @@ def main(args):
     # route = 'assets/routes_training/route_10.xml'
 
     args.agent = 'autoagents/collector_agents/q_collector' # Use 'viz_collector' for collecting pretty images
-    args.agent_config = 'dataset/config_data_collection.yaml'
+    args.agent_config = 'dataset/config_data_collection_test.yaml'
     #args.agent_config = 'experiments/config_nocrash.yaml'
 
     # args.agent = 'autoagents/collector_agents/lidar_q_collector'

@@ -82,6 +82,8 @@ class QCollector(AutonomousAgent):
         self.spds = []
         self.cmds = []
         self.tlss = []
+        self.ego_locations = [] # (x,y,z)
+        self.ego_rotations = [] # (pitch,yaw,roll)
 
         self.waypointer = None
 
@@ -172,6 +174,14 @@ class QCollector(AutonomousAgent):
                     f'tls_{i:05d}'.encode(),
                     np.ascontiguousarray(self.tlss[i]).astype(np.uint8),
                 )
+                txn.put(
+                    f'ego_location_{i:05d}'.encode(),
+                    np.ascontiguousarray(self.ego_locations[i]).astype(np.float32),
+                )
+                txn.put(
+                    f'ego_rotation_{i:05d}'.encode(),
+                    np.ascontiguousarray(self.ego_rotations[i]).astype(np.float32),
+                )
         self.vizs.clear()
         self.wide_rgbs.clear()
         self.narr_rgbs.clear()
@@ -183,6 +193,8 @@ class QCollector(AutonomousAgent):
         self.spds.clear()
         self.cmds.clear()
         self.tlss.clear()
+        self.ego_locations.clear()
+        self.ego_rotations.clear()
 
         lmdb_env.close()
 
@@ -222,6 +234,7 @@ class QCollector(AutonomousAgent):
             _, wide_sem = input_data.get(f'Wide_SEG_{i}')
             _, narr_sem = input_data.get(f'Narrow_SEG_{i}')
 
+
             wide_rgbs.append(wide_rgb[...,:3])
             narr_rgbs.append(narr_rgb[...,:3])
             wide_sems.append(wide_sem)
@@ -233,6 +246,24 @@ class QCollector(AutonomousAgent):
         _, ego = input_data.get('EGO')
         _, gps = input_data.get('GPS')
 
+        # Get ego-vehicle
+        if self.ego_actor is None:
+            vehicles = CarlaDataProvider._client.get_world().get_actors().filter('vehicle.*')
+            for v in vehicles:
+                if v.attributes['role_name'] == 'hero':
+                    self.ego_actor = v
+                    break;
+        ego_location = self.ego_actor.get_transform().location
+        ego_location = np.array([ego_location.x, ego_location.y, ego_location.z])
+
+        ego_rotation = self.ego_actor.get_transform().rotation
+        ego_rotation = np.array([ego_rotation.pitch, ego_rotation.yaw, ego_rotation.roll])
+        # Modify traffic light label of wide_sem (discard it if no red light)
+        tls = (1 in lbl[...,3])
+        if not tls:
+            wide_sem[wide_sem == 18] = 0
+
+
         if self.waypointer is None:
             self.waypointer = Waypointer(self._global_plan, gps)
             _, _, cmd = self.waypointer.tick(gps)
@@ -242,14 +273,6 @@ class QCollector(AutonomousAgent):
         yaw = ego.get('rot')[-1]
         spd = ego.get('spd')
         loc = ego.get('loc')
-
-        if self.ego_actor is None:
-            vehicles = CarlaDataProvider._client.get_world().get_actors().filter('vehicle.*')
-            for v in vehicles:
-                if v.attributes['role_name'] == 'hero':
-                    self.ego_actor = v
-                    break;
-        tls = 1 if (CarlaDataProvider.get_next_traffic_light(self.ego_actor, False).get_state() ==  0) else 0
 
         delta_locs, delta_yaws, next_spds = BellmanUpdater.compute_table(yaw/180*math.pi)
 
@@ -286,12 +309,16 @@ class QCollector(AutonomousAgent):
         if self.noise_collect:
             steer += self.noiser()
 
-        if len(self.vizs) > self.num_per_flush:
+        flush_length = len(self.vizs)
+        if flush_length > self.num_per_flush:
             self.flush_data()
 
-        rgb = np.concatenate([wide_rgbs[0], narr_rgbs[0]], axis=1)
+        if (flush_length % 100) == 0:
+            print(f'{flush_length}')
+
+        #rgb = np.concatenate([wide_rgbs[0], narr_rgbs[0]], axis=1)
         spd = ego.get('spd')
-        self.vizs.append(visualize_obs(rgb, yaw/180*math.pi, (steer, throt, brake), spd, cmd=cmd.value, lbl=lbl_copy, sem=sem, tls=tls))
+        self.vizs.append(visualize_obs(wide_rgb, yaw/180*math.pi, (steer, throt, brake), spd, cmd=cmd.value, lbl=lbl_copy, sem=wide_sem, tls=tls))
 
         if col:
             self.flush_data()
@@ -322,6 +349,8 @@ class QCollector(AutonomousAgent):
             self.spds.append(spd)
             self.cmds.append(cmd_value)
             self.tlss.append(tls)
+            self.ego_locations.append(ego_location)
+            self.ego_rotations.append(ego_rotation)
 
         self.num_frames += 1
 

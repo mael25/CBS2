@@ -28,7 +28,7 @@ class CBS:
             #height=64, width=64,
             height=240-self.crop_top-self.crop_bottom, width=480,
             #input_channel=12,
-            input_channel=6, # those of sem plus one for tl
+            input_channel=5, # [4,7,8,10,18]
             output_channel=self.T*self.num_cmds
         ).to(self.device)
 
@@ -44,7 +44,7 @@ class CBS:
 
         self.converter = Converter(offset=6.0, scale=[1.5,1.5]).to(self.device)
 
-    def train(self, rgbs, lbls, sems, locs, spds, cmds, sem_channels_tls, train='image'):
+    def train(self, rgbs, lbls, sems, locs, spds, cmds, sem_channels_tls, locs_sem, train='image'):
 
         rgbs = rgbs.permute(0,3,1,2).float().to(self.device)
         lbls = lbls.permute(0,3,1,2).float().to(self.device)
@@ -55,7 +55,7 @@ class CBS:
         sem_channels_tls = sem_channels_tls.permute(0,3,1,2).float().to(self.device)
 
         if train == 'bev':
-            return self.train_bev(sem_channels_tls, spds, locs, cmds)
+            return self.train_bev(sem_channels_tls, spds, locs, cmds, locs_sem)
 
         elif train == 'rgb':
             return self.train_rgb(rgbs, sem_channels_tls, sems, spds, cmds)
@@ -63,15 +63,18 @@ class CBS:
         else:
             raise NotImplementedError
 
-    def train_bev(self, sem_channels_tls, spds, locs, cmds):
-
-        pred_locs = self.bev_model(sem_channels_tls, spds).view(-1,self.num_cmds,self.T,2)
+    def train_bev(self, sem_channels_tls, spds, locs, cmds, locs_sem):
+        print('Train BEV (CBS)\n')
+        print(self.bev_model)
+        pred_locs_sem = self.bev_model(sem_channels_tls, spds).view(-1,self.num_cmds,self.T,2)
 
         # Scale pred locs
-        pred_locs = (pred_locs+1) * self.crop_size/2
+        #pred_locs = (pred_locs+1) * self.crop_size/2
+        pred_locs_sem = (pred_locs_sem+1) * self.rgb_model.img_size/2
 
-        # As we replaced bev by sem, we shopuld make the transformation to bev as it corresponds to the space of locs
-        pred_locs = self.cam_to_bev(pred_locs)
+
+        # As we replaced bev by sem, we should make the transformation to bev as it corresponds to the space of locs
+        pred_locs = self.cam_to_bev(pred_locs_sem)
 
         #loss = F.mse_loss(pred_locs.gather(1, cmds[:,None,None,None].repeat(1,1,self.T,2)).squeeze(1), locs)
         loss = F.mse_loss(pred_locs.gather(1, cmds[:,None,None,None].repeat(1,1,self.T,2)).squeeze(1), locs)
@@ -84,20 +87,25 @@ class CBS:
             loss=float(loss),
             cmds=_numpy(cmds),
             locs=_numpy(locs),
+            #locs_sem=_numpy(self.bev_to_cam(locs)),
+            locs_sem=_numpy(locs_sem),
             pred_locs=_numpy(pred_locs),
+            pred_locs_sem=_numpy(pred_locs_sem),
         )
 
     def train_rgb(self, rgbs, sem_channels_tls, sems, spds, cmds):
+        print('Train RGB (CBS)\n')
 
         with torch.no_grad():
-            tgt_bev_locs = (self.bev_model(sem_channels_tls, spds).view(-1,self.num_cmds,self.T,2)+1) * self.crop_size/2
-            # As we replaced bev by sem, we shopuld make the transformation to bev as it corresponds to the space of locs
-            tgt_bev_locs = self.cam_to_bev(tgt_bev_locs)
+            #tgt_bev_locs = (self.bev_model(sem_channels_tls, spds).view(-1,self.num_cmds,self.T,2)+1) * self.crop_size/2
+            tgt_rgb_locs = (self.bev_model(sem_channels_tls, spds).view(-1,self.num_cmds,self.T,2)+1) * self.rgb_model.img_size/2
+            # As we replaced bev by sem, we should make the transformation to bev as it corresponds to the space of locs
+            tgt_bev_locs = self.cam_to_bev(tgt_rgb_locs)
 
         pred_rgb_locs, pred_sems = self.rgb_model(rgbs, spds)
         pred_rgb_locs = (pred_rgb_locs.view(-1,self.num_cmds,self.T,2)+1) * self.rgb_model.img_size/2
 
-        tgt_rgb_locs = self.bev_to_cam(tgt_bev_locs)
+        #tgt_rgb_locs = self.bev_to_cam(tgt_bev_locs) #Not needed as sem and rgb are same orientation and format
         pred_bev_locs = self.cam_to_bev(pred_rgb_locs)
 
         act_loss = F.l1_loss(pred_bev_locs, tgt_bev_locs, reduction='none').mean(dim=[2,3])

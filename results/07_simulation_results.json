@@ -3,7 +3,7 @@
         "global_record": {},
         "progress": [
             0,
-            7600
+            76
         ],
         "records": [
             {
@@ -20,15 +20,15 @@
                     "vehicle_blocked": []
                 },
                 "meta": {
-                    "duration_game": 91.05000135675073,
-                    "duration_system": 1410.1538064479828,
+                    "duration_game": 0.850000012665987,
+                    "duration_system": 85.46728897094727,
                     "route_length": 737.4217028017997
                 },
                 "route_id": "RouteScenario_0",
                 "scores": {
-                    "score_composed": 31.103442051043082,
+                    "score_composed": 0.22937439194215348,
                     "score_penalty": 1.0,
-                    "score_route": 31.103442051043082
+                    "score_route": 0.22937439194215348
                 },
                 "status": "Failed - Simulation crashed"
             }
