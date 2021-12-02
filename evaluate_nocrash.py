@@ -20,7 +20,9 @@ if __name__ == '__main__':
 
     # Agent configs
     #parser.add_argument('--agent', default='autoagents/image_agent')
-    parser.add_argument('--agent', default='autoagents/lbc_agent')
+    #parser.add_argument('--agent', default='autoagents/lbc_agent')
+    #parser.add_argument('--agent', default='autoagents/cbs_agent')
+    parser.add_argument('--agent', default='autoagents/cbs0_agent')
     #parser.add_argument('--agent-config', default='experiments/config_nocrash.yaml')
     parser.add_argument('--agent-config', default='results/config_nocrash_my.yaml')
 

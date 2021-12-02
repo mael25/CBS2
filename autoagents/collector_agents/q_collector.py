@@ -84,6 +84,8 @@ class QCollector(AutonomousAgent):
         self.tlss = []
         self.ego_locations = [] # (x,y,z)
         self.ego_rotations = [] # (pitch,yaw,roll)
+        self.cam_locations = [] # (x,y,z)
+        self.cam_rotations = [] # (pitch,yaw,roll)
 
         self.waypointer = None
 
@@ -96,6 +98,7 @@ class QCollector(AutonomousAgent):
         self.stop_count = 0
 
         self.ego_actor = None
+        self.ego_cam = None
 
     def destroy(self):
         if len(self.lbls) == 0:
@@ -182,6 +185,14 @@ class QCollector(AutonomousAgent):
                     f'ego_rotation_{i:05d}'.encode(),
                     np.ascontiguousarray(self.ego_rotations[i]).astype(np.float32),
                 )
+                txn.put(
+                    f'cam_location_{i:05d}'.encode(),
+                    np.ascontiguousarray(self.cam_locations[i]).astype(np.float32),
+                )
+                txn.put(
+                    f'cam_rotation_{i:05d}'.encode(),
+                    np.ascontiguousarray(self.cam_rotations[i]).astype(np.float32),
+                )
         self.vizs.clear()
         self.wide_rgbs.clear()
         self.narr_rgbs.clear()
@@ -195,6 +206,8 @@ class QCollector(AutonomousAgent):
         self.tlss.clear()
         self.ego_locations.clear()
         self.ego_rotations.clear()
+        self.cam_locations.clear()
+        self.cam_rotations.clear()
 
         lmdb_env.close()
 
@@ -210,8 +223,10 @@ class QCollector(AutonomousAgent):
         for i, yaw in enumerate(self.camera_yaws):
             x = self.camera_x*math.cos(yaw*math.pi/180)
             y = self.camera_x*math.sin(yaw*math.pi/180)
-            sensors.append({'type': 'sensor.stitch_camera.rgb', 'x': x, 'y': y, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': yaw,
-            'width': 160, 'height': 240, 'fov': 60, 'id': f'Wide_RGB_{i}'})
+            #sensors.append({'type': 'sensor.stitch_camera.rgb', 'x': x, 'y': y, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': yaw,
+            #'width': 160, 'height': 240, 'fov': 60, 'id': f'Wide_RGB_{i}'})
+            sensors.append({'type': 'sensor.camera.rgb', 'x': x, 'y': y, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': yaw,
+            'width': 480, 'height': 240, 'fov': 120, 'id': f'Wide_RGB_{i}'})
             sensors.append({'type': 'sensor.stitch_camera.semantic_segmentation', 'x': x, 'y': y, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': yaw,
             'width': 160, 'height': 240, 'fov': 60, 'id': f'Wide_SEG_{i}'})
             sensors.append({'type': 'sensor.camera.rgb', 'x': x, 'y': y, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': yaw,
@@ -258,6 +273,24 @@ class QCollector(AutonomousAgent):
 
         ego_rotation = self.ego_actor.get_transform().rotation
         ego_rotation = np.array([ego_rotation.pitch, ego_rotation.yaw, ego_rotation.roll])
+
+        if self.ego_cam is None:
+            cams = CarlaDataProvider._client.get_world().get_actors().filter('sensor.camera.rgb')
+            for c in cams:
+                print(c)
+                if(c.attributes.get('fov') == '120'):
+                    print('found')
+                    self.ego_cam = c
+
+        cam_location = self.ego_cam.get_transform().location
+        cam_location = np.array([cam_location.x, cam_location.y, cam_location.z])
+
+        cam_rotation = self.ego_cam.get_transform().rotation
+        cam_rotation = np.array([cam_rotation.pitch, cam_rotation.yaw, cam_rotation.roll])
+        #print(cam_location)
+        #print(cam_rotation)
+
+
         # Modify traffic light label of wide_sem (discard it if no red light)
         tls = (1 in lbl[...,3])
         if not tls:
@@ -318,7 +351,8 @@ class QCollector(AutonomousAgent):
 
         #rgb = np.concatenate([wide_rgbs[0], narr_rgbs[0]], axis=1)
         spd = ego.get('spd')
-        self.vizs.append(visualize_obs(wide_rgb, yaw/180*math.pi, (steer, throt, brake), spd, cmd=cmd.value, lbl=lbl_copy, sem=wide_sem, tls=tls))
+        #self.vizs.append(visualize_obs(wide_rgb, yaw/180*math.pi, (steer, throt, brake), spd, cmd=cmd.value, lbl=lbl_copy, sem=wide_sem, tls=tls))
+        self.vizs.append(np.zeros((1)))
 
         if col:
             self.flush_data()
@@ -351,6 +385,8 @@ class QCollector(AutonomousAgent):
             self.tlss.append(tls)
             self.ego_locations.append(ego_location)
             self.ego_rotations.append(ego_rotation)
+            self.cam_locations.append(cam_location)
+            self.cam_rotations.append(cam_rotation)
 
         self.num_frames += 1
 

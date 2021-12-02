@@ -25,9 +25,9 @@ def main(args):
             global_it += 1
 
             if global_it % args.num_iters_per_log == 0:
-                logger.log_bev(global_it, lbls, info.copy())
+                #logger.log_bev(global_it, lbls, info.copy())
                 #Added: log also in the segm. view:
-                #logger.log_sem(global_it, rgbs, lbls, info)
+                logger.log_locs(global_it, rgbs, lbls, info)
 
 
         # Save model
@@ -50,8 +50,8 @@ if __name__ == '__main__':
     parser.add_argument('--num-epochs', type=int, default=20)
 
     # Logging config
-    #parser.add_argument('--num-iters-per-log', type=int, default=100)
-    parser.add_argument('--num-iters-per-log', type=int, default=1)
+    parser.add_argument('--num-iters-per-log', type=int, default=100)
+    #parser.add_argument('--num-iters-per-log', type=int, default=1)
 
     args = parser.parse_args()
 

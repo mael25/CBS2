@@ -42,7 +42,8 @@ class Logger:
 
         cmd = info.pop('cmds')[0]
         print(f'cmd: {cmd}')
-        tgt_rgb_loc = info.pop('locs_sem')[0]
+        #tgt_rgb_loc = info.pop('locs_sem')[0]
+        tgt_rgb_loc = info.pop('loc_sem')[0]
         tgt_bev_loc = info.pop('locs')[0]
         pred_rgb_loc = info.pop('pred_locs_sem')[0][cmd]
         pred_bev_loc = info.pop('pred_locs')[0][cmd]
@@ -62,6 +63,32 @@ class Logger:
             rgb_ax.add_patch(Circle(pred_rgb_loc[i], 4, color='red'))
             lbl_ax.add_patch(Circle(tgt_bev_loc[i], 1, color='blue'))
             lbl_ax.add_patch(Circle(pred_bev_loc[i], 1, color='red'))
+        info.update({'global_it': it, 'visuals': plt})
+        wandb.log(info)
+        plt.close('all')
+
+
+
+    def log_locs(self, it, rgbs, lbls, info): #copy of log_rgb to be used for teacher
+
+        rgb = rgbs[0].numpy()
+        cmd = info.pop('cmds')[0]
+
+        locs_image_space = info.pop('locs_image_space')[0]
+        #locs_sem_off = info.pop('locs_sem_off')[0]
+        pred_locs_image_space = info.pop('pred_locs_image_space')[0][cmd]
+
+        f, ax = plt.subplots(figsize=(30,15))
+        ax.imshow(rgb)
+        # print(f'GT WoR: {locs_sem_off[0]}')
+        # print(f'GT CBS: {locs_sem_cbs[0]}')
+        # print(f'Pred  : {pred_locs_sem[0]}')
+        #for i in range(locs_sem_off.shape[0]):
+            #ax.add_patch(Circle(locs_sem_off[i], 4, color='blue'))
+        for i in range(locs_image_space.shape[0]):
+            ax.add_patch(Circle(locs_image_space[i], 4, color='red'))
+        for i in range(pred_locs_image_space.shape[0]):
+            ax.add_patch(Circle(pred_locs_image_space[i], 4, color='yellow'))
         info.update({'global_it': it, 'visuals': plt})
         wandb.log(info)
         plt.close('all')

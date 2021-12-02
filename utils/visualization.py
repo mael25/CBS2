@@ -57,7 +57,7 @@ def visualize_big(rgb, yaw, control, speed, cmd=None, lbl=None, sem=None, text_a
 
     return canvas
 
-def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=None, map=None, sem=None, lidar=None, tls=None, text_args=(cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)):
+def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=None, map=None, sem=None, lidar=None, tls=None, pred=None, controlw=None, predw=None, text_args=(cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)):
     """
     0 road
     1 lane
@@ -68,6 +68,11 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
     6-11 waypoints
     """
     canvas = np.array(rgb[...,::-1])
+    for i in range(pred.shape[0]):
+        cv2.circle(canvas, (int(pred[i,0]), int(pred[i,1])), 2, (0,0,0), -1)
+    if predw is not None:
+        for i in range(predw.shape[0]):
+            cv2.circle(canvas, (int(predw[i,0]), int(predw[i,1])), 2, (1,0,0), -1)
     if lbl is not None:
         ori_x, ori_y = np.cos(yaw), np.sin(yaw)
         H = canvas.shape[0]
@@ -83,7 +88,7 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
             wx, wy = tgt
             h, w = map.shape[:2]
             px, py = int(w/2 + wx * PIXELS_PER_METER), int(h/2 + wy * PIXELS_PER_METER - PIXELS_AHEAD_VEHICLE)
-            # print (px, py)
+            print (px, py)
             cv2.circle(map, (px, py), 2, (0,0,0), -1)
         canvas = np.concatenate([canvas, cv2.resize(map, (H,H))], axis=1)
 
@@ -103,6 +108,12 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
         f'steer: {control[0]:.3f} throttle: {control[1]:.3f} brake: {control[2]:.3f}',
         (4, 20), *text_args
     )
+    if controlw is not None:
+        cv2.putText(
+            canvas,
+            f'steer: {controlw[0]:.3f} throttle: {controlw[1]:.3f} brake: {controlw[2]:.3f}',
+            (4, 20), *text_args
+        )
     if cmd is not None:
         cv2.putText(canvas, 'cmd: {}'.format({1:'left',2:'right',3:'straight',4:'follow',5:'change left',6:'change right'}.get(cmd)), (4, 30), *text_args)
 
