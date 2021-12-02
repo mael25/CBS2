@@ -20,7 +20,7 @@ bev_model_dir: cbs/reference/bev_model_20.th
 # Location of distilled agent used to evaluate model evaluate_nocrash.py)
 # Note: the distilled agent is saved in the wandb logger_dir (lbc.train_phase1.py)
 rgb_model_dir_wor: cbs/reference/rgb_model_20.th
-rgb_model_dir: cbs0/reference/model-5.th
+rgb_model_dir: cbs0/reference/ppm-model-5.th
 
 #ppm_bins: [1,2,3,6]
 ppm_bins: []

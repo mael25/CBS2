@@ -13,45 +13,23 @@ from . import common
 from .agent import Agent
 from .controller import CustomController, PIDController
 from .controller import ls_circle
+from .ppm import PPM
+from .fpn import FPN
 
-
-CROP_SIZE = 192
 STEPS = 5
 COMMANDS = 4
 DT = 0.1
 CROP_SIZE = 192
 PIXELS_PER_METER = 5
 
-
-################################################################
-## MODIF 12/10/21
-class PPM(nn.Module):
-    def __init__(self, in_dim, reduction_dim, bins):
-        print('\n---------------------WITH PPM-----------------------\n')
-        super(PPM, self).__init__()
-        self.features = []
-        for bin in bins:
-            self.features.append(nn.Sequential(
-                nn.AdaptiveAvgPool2d(bin),
-                nn.Conv2d(in_dim, reduction_dim, kernel_size=1, bias=False),
-                nn.BatchNorm2d(reduction_dim),
-                nn.ReLU(inplace=True)
-            ))
-        self.features = nn.ModuleList(self.features)
-
-    def forward(self, x):
-        x_size = x.size()
-        out = [x]
-        for f in self.features:
-            out.append(F.interpolate(f(x), x_size[2:], mode='bilinear', align_corners=True))
-        return torch.cat(out, 1)
-################################################################
-
-
-
 class ImagePolicyModelSS(common.ResnetBase):
-    def __init__(self, backbone, warp=False, pretrained=False, ppm=False, all_branch=False, **kwargs):
+    def __init__(self, backbone, warp=False, pretrained=False, ppm_bins=None, fpn=False, all_branch=False, **kwargs):
         super().__init__(backbone, pretrained=pretrained, input_channel=3, bias_first=False)
+        ################################################################
+        self.fpn_extractor = None
+        if fpn:
+            self.fpn_extractor = FPN()
+        ################################################################
         self.c = {
                 'resnet18': 512,
                 'resnet34': 512,
@@ -64,17 +42,18 @@ class ImagePolicyModelSS(common.ResnetBase):
         )
         ################################################################
         ## MODIF 12/10/21
-        if ppm:
+        self.ppm = None
+        if ppm_bins is not None and len(ppm_bins) > 0:
             features_dimensions = 512 # resnet34 after layer4 has 512 features maps #original 2048
-            bins=(1, 2, 3, 6) # list of desired adaptive pooling outputs dimensions (1 is global pooling)
-            self.ppm = PPM(features_dimensions, int(features_dimensions/len(bins)), bins)
-        else:
-            self.ppm = None
+            self.ppm = PPM(features_dimensions, int(features_dimensions/len(ppm_bins)), ppm_bins)
+
+        assert not ((self.ppm is not None) and (self.fpn_extractor is not None)), "PPM and FPN cannot be used simultaneously"
+        self.has_additional_module = (self.ppm is not None) or (self.fpn_extractor is not None)
         ################################################################
 
         self.deconv = nn.Sequential(
-            nn.BatchNorm2d((self.c if not ppm else 2*self.c) + 128),
-            nn.ConvTranspose2d((self.c if not ppm else 2*self.c) + 128,256,3,2,1,1),
+            nn.BatchNorm2d((self.c if not self.has_additional_module else 2*self.c) + 128),
+            nn.ConvTranspose2d((self.c if not self.has_additional_module else 2*self.c) + 128,256,3,2,1,1),
             nn.ReLU(True),
             nn.BatchNorm2d(256),
             nn.ConvTranspose2d(256,128,3,2,1,1),
@@ -107,14 +86,14 @@ class ImagePolicyModelSS(common.ResnetBase):
 
 
         image = self.rgb_transform(image)
-
-        h = self.conv(image)
         ################################################################
-        ## MODIF 12/10/21
-        #print('PPM input', h.size())
+        if self.fpn_extractor is not None:
+            h = self.fpn(image)
+        else:
+            h = self.conv(image)
+
         if self.ppm is not None:
             h = self.ppm(h)
-        #print('PPM output', h.size())
         ################################################################
         b, c, kh, kw = h.size()
 
@@ -135,13 +114,12 @@ class ImagePolicyModelSS(common.ResnetBase):
         return location_pred
 
 
-'''
+
 class ImageAgent(Agent):
     def __init__(self, steer_points=None, pid=None, gap=5, camera_args={'x':384,'h':160,'fov':90,'world_y':1.4,'fixed_offset':4.0}, **kwargs):
         super().__init__(**kwargs)
 
         self.fixed_offset = float(camera_args['fixed_offset'])
-        print ("Offset: ", self.fixed_offset)
         w = float(camera_args['w'])
         h = float(camera_args['h'])
         self.img_size = np.array([w,h])
@@ -281,4 +259,3 @@ class ImageAgent(Agent):
         world_output = world_output.squeeze()
 
         return world_output
-'''

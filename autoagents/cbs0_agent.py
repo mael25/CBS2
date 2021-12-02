@@ -16,10 +16,10 @@ from utils import visualize_obs, _numpy
 
 from autoagents.waypointer import Waypointer
 
-from cbs0.models import common
-from cbs0.models.controller import CustomController, PIDController
-from cbs0.models.controller import ls_circle
-from cbs0.models.image import PPM, ImagePolicyModelSS
+from cbs0.bird_view.models import common
+from cbs0.bird_view.models.controller import CustomController, PIDController
+from cbs0.bird_view.models.controller import ls_circle
+from cbs0.bird_view.models.image import PPM, ImagePolicyModelSS
 
 import torchvision.transforms as transforms
 
@@ -56,7 +56,9 @@ class CBS0Agent(AutonomousAgent):
 # CBS
         self.model = ImagePolicyModelSS(
             backbone='resnet34',
-            all_branch=False
+            all_branch=False,
+            ppm_bins=self.ppm_bins,
+            fpn=True
         ).to(self.device)
         self.model.load_state_dict(torch.load(self.rgb_model_dir))
         self.model.eval()
@@ -131,7 +133,8 @@ class CBS0Agent(AutonomousAgent):
         rgb = np.array(rgb[...,:3])
 
         # Crop images
-        _rgb = rgb[self.crop_top:-self.crop_bottom,:,:3]
+        #_rgb = rgb[self.crop_top:-self.crop_bottom,:,:3]
+        _rgb = rgb[:,:,:3]
 
         _rgb = _rgb[...,::-1].copy()
 
