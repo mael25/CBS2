@@ -58,7 +58,7 @@ class CBS0Agent(AutonomousAgent):
             backbone='resnet34',
             all_branch=False,
             ppm_bins=self.ppm_bins,
-            fpn=True
+            fpn=False
         ).to(self.device)
         self.model.load_state_dict(torch.load(self.rgb_model_dir))
         self.model.eval()
@@ -122,7 +122,6 @@ class CBS0Agent(AutonomousAgent):
             {'type': 'sensor.other.gnss', 'x': 0., 'y': 0.0, 'z': self.camera_z, 'id': 'GPS'},
             {'type': 'sensor.camera.rgb', 'x': self.camera_x, 'y': 0, 'z': self.camera_z, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0,
             'width': 384, 'height': 160, 'fov': 120, 'id': f'RGB'},
-
         ]
 
         return sensors
@@ -152,7 +151,7 @@ class CBS0Agent(AutonomousAgent):
         command = self.one_hot[_cmd - 1]
 
         _rgb = torch.tensor(_rgb[None]).float().permute(0,3,1,2).to(self.device)
-        print(f'RGB size: {_rgb.size()}')
+        #print(f'RGB size: {_rgb.size()}')
         _speed = torch.tensor([speed]).float().to(self.device)
 
         with torch.no_grad():
