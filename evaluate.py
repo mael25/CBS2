@@ -5,11 +5,13 @@ def main(args):
     scenario = 'assets/all_towns_traffic_scenarios.json'
     # scenario = 'assets/no_scenarios.json'
     # route = 'assets/routes_dev.xml'
-    route = 'assets/routes_training/route_10.xml'
+    route = 'assets/routes_training/route_04.xml'
 
-    args.agent = 'autoagents/image_agent'
+    #args.agent = 'autoagents/image_agent'
+    args.agent = 'autoagents/cbs0_agent'
     # args.agent = 'autoagents/collector_agents/lidar_q_collector'
-    args.agent_config = 'config.yaml'
+    #args.agent_config = 'config.yaml'
+    args.agent_config = 'results_lead/config_lead.yaml'
     # args.agent_config = 'config_lidar.yaml'
 
     port = args.port

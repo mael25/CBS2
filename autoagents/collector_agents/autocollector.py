@@ -34,7 +34,8 @@ STOP_THRESH = 0.1
 MAX_STOP = 500
 
 class OrnsteinUhlenbeckActionNoise:
-    def __init__(self, mu=0, sigma=0.1, theta=0.1, dt=0.1, x0=None):
+    #def __init__(self, mu=0, sigma=0.1, theta=0.1, dt=0.1, x0=None):
+    def __init__(self, mu=0, sigma=0.06, theta=0.06, dt=0.1, x0=None):
         self.theta = theta
         self.mu = mu
         self.sigma = sigma
@@ -100,8 +101,8 @@ class AutoCollector(AutonomousAgent):
         ########################################################################
         # agents.navigation.BasicAgent default parameter
         ########################################################################
-        target_speed = 5
-        self._proximity_tlight_threshold = 5.0  # meters
+        target_speed = 5.0
+        self._proximity_tlight_threshold = 1.0  # meters
         self._proximity_vehicle_threshold = 10.0  # meters
         self._state = AgentState.NAVIGATING
         self.args_lateral_dict = {
@@ -302,7 +303,7 @@ class AutoCollector(AutonomousAgent):
         loc = ego.get('loc')
 
         _, cmd = self._local_planner._waypoints_queue[0]
-        print(cmd)
+        #print(cmd)
 
 
         # If it is idle, make it LANE_FOLLOW

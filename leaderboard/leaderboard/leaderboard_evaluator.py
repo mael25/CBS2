@@ -79,7 +79,7 @@ class LeaderboardEvaluator(object):
         self.sensors = None
         self.sensor_icons = []
         self._vehicle_lights = carla.VehicleLightState.Position | carla.VehicleLightState.LowBeam
-        
+
         # First of all, we need to create the client that will send the requests
         # to the simulator. Here we'll assume the simulator is accepting
         # requests in the localhost at port 2000.
@@ -110,7 +110,7 @@ class LeaderboardEvaluator(object):
         # Create the agent timer
         self._agent_watchdog = Watchdog(int(float(args.timeout)))
         signal.signal(signal.SIGINT, self._signal_handler)
-        
+
         # Set scenario class
         self._scenario_class = {
             'route_scenario': RouteScenario,
@@ -118,12 +118,12 @@ class LeaderboardEvaluator(object):
             'nocrash_train_scenario': NoCrashTrainScenario,
             'nocrash_eval_scenario' : NoCrashEvalScenario,
         }.get(args.scenario_class)
-        
+
         if args.scenario_class == 'train_scenario':
             self.town = args.town
         else:
             self.town = None
-        
+
     def _signal_handler(self, signum, frame):
         """
         Terminate scenario ticking when receiving a signal interrupt
@@ -331,6 +331,8 @@ class LeaderboardEvaluator(object):
             scenario = self._scenario_class(world=self.world, config=config, debug_mode=args.debug)
             self.statistics_manager.set_scenario(scenario.scenario)
 
+            print(f'{config.town} - {scenario.name}')
+
             # Night mode
             if config.weather.sun_altitude_angle < 0.0:
                 for vehicle in scenario.ego_vehicles:
@@ -340,6 +342,7 @@ class LeaderboardEvaluator(object):
             if args.record:
                 self.client.start_recorder("{}/{}_rep{}.log".format(args.record, config.name, config.repetition_index))
             self.manager.load_scenario(scenario, self.agent_instance, config.repetition_index)
+
 
         except Exception as e:
             # The scenario is wrong -> set the ejecution to crashed and stop
@@ -420,7 +423,7 @@ class LeaderboardEvaluator(object):
         while route_indexer.peek():
             # setup
             config = route_indexer.next()
-            
+
             if self.town is not None:
                 config.town = self.town
 
