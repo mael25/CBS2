@@ -4,20 +4,31 @@ def main(args):
 
     scenario = 'assets/all_towns_traffic_scenarios.json'
     # scenario = 'assets/no_scenarios.json'
-    # route = 'assets/routes_dev.xml'
-    route = 'assets/routes_training/route_04.xml'
 
-    #args.agent = 'autoagents/image_agent'
     args.agent = 'autoagents/cbs0_agent'
-    # args.agent = 'autoagents/collector_agents/lidar_q_collector'
+    #args.agent = 'autoagents/image_agent'
+    #args.agent = 'autoagents/collector_agents/lidar_q_collector'
     #args.agent_config = 'config.yaml'
-    args.agent_config = 'results_lead/config_lead.yaml'
+
+    if(args.mod == 'fpn'):
+        args.agent_config = 'results_lead/lead_fpn.yaml'
+    elif(args.mod == 'ppm'):
+        args.agent_config = 'results_lead/lead_ppm.yaml'
+    else:
+        args.agent_config = 'results_lead/lead_original.yaml'
     # args.agent_config = 'config_lidar.yaml'
 
     port = args.port
     tm_port = port + 2
-    runner = ChallengeRunner(args, scenario, route, port=port, tm_port=tm_port)
-    runner.run()
+
+    for i in range(10,20):
+        route = f'assets/routes_training/route_{i}.xml'
+        #route = 'assets/routes_dev.xml'
+        #route = 'assets/routes_training/route_10.xml'
+
+        runner = ChallengeRunner(args, scenario, route, port=port, tm_port=tm_port)
+        runner.run()
+        del runner
 
 
 
@@ -45,6 +56,9 @@ if __name__ == '__main__':
     parser.add_argument("--checkpoint", type=str,
                         default='./simulation_results.json',
                         help="Path to checkpoint used for saving statistics and resuming")
+    parser.add_argument("--mod", type=str,
+                        default='original',
+                        help="Perception module (original, ppm, fpn)")
 
     args = parser.parse_args()
 

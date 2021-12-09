@@ -50,7 +50,10 @@ class CBS0Agent(AutonomousAgent):
         self.waypointer = None
 
         if self.log_wandb:
-            wandb.init(project='carla_evaluate')
+            wandb.init(project= path_to_conf_file.split('/')[-1].split('.')[0])
+            #if hasattr(self, 'route'):
+                #wandb.run.name = self.route + '_' + wandb.run.name
+
 
 ################################################################################
 # CBS
@@ -58,7 +61,7 @@ class CBS0Agent(AutonomousAgent):
             backbone='resnet34',
             all_branch=False,
             ppm_bins=self.ppm_bins,
-            fpn=False
+            fpn=self.fpn
         ).to(self.device)
         self.model.load_state_dict(torch.load(self.rgb_model_dir))
         self.model.eval()
