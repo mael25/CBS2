@@ -297,7 +297,7 @@ class AutoCollector(AutonomousAgent):
         #     _, _, cmd = self.waypointer.tick(gps)
 
         yaw = ego.get('rot')[-1]
-        rot = ego.get('rot') # roll, pitch, yaw
+        rot = ego.get('rot') # roll, pitch, yaw --> this sensor gives result in different order than Rotation def.
         rot = [rot[1], rot[2], rot[0]] # pitch, yaw, roll
         spd = ego.get('spd')
         loc = ego.get('loc')
