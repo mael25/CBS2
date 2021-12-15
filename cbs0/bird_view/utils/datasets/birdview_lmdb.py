@@ -260,7 +260,7 @@ class BirdViewDataset(Dataset):
         p = np.poly1d(z)
 
         # Keep interpolating until we have n_step points
-        while points.shape[0] < self.n_step:
+        while points.shape[0] < 5:
             points_2 = np.vstack([points[0], points[:-1]])
             max_id = np.argmax(np.linalg.norm(points - points_2, axis=1))
             _x = np.mean([points[max_id], points_2[max_id]], axis=0)[0]
