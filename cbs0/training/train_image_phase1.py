@@ -12,7 +12,6 @@ import os
 import sys
 
 try:
-    sys.path.append(glob.glob('../PythonAPI')[0])
     sys.path.append(glob.glob('../bird_view')[0])
 except IndexError as e:
     pass
@@ -22,7 +21,7 @@ import utils.bz_utils as bzu
 from models.birdview import BirdViewPolicyModelSS
 from models.image import ImagePolicyModelSS
 from utils.train_util import one_hot
-from utils.image_utils import draw_msra_gaussian, gaussian_radius, CoordinateConverter
+#from utils.image_utils import draw_msra_gaussian, gaussian_radius, CoordinateConverter
 from utils.datasets.image_lmdb import get_image as load_data
 from utils.datasets.birdview_lmdb import Location, Transform, Rotation
 
@@ -31,7 +30,6 @@ GAP = 5
 N_STEP = 5
 PIXELS_PER_METER = 5
 CROP_SIZE = 192
-# SAVE_EPOCHS = [1, 2, 4, 8, 16, 32, 64, 128, 192, 256]
 SAVE_EPOCHS = range(0, 1000, 2)
 
 
@@ -65,46 +63,6 @@ class CoordConverter():
         map_output[...,1] += self._fixed_offset*PIXELS_PER_METER
 
         return map_output
-
-
-class CoordConverter2():
-    def __init__(self, w=384, h=160, fov=90, world_y=1.4, fixed_offset=4.0,
-                 device='cuda'):
-        self._w = w
-        self._h = h
-        self._img_size = torch.FloatTensor([w, h]).to(device)
-        self._fov = fov
-        self._world_y = world_y
-        self._fixed_offset = fixed_offset
-
-        self._tran = np.array([0., 0., 0.])
-        self._rot = np.array([0., 0., 0.])
-        f = self._w / (2 * np.tan(self._fov * np.pi / 360))
-        self._A = np.array([
-            [f, 0., self._w / 2],
-            [0, f, self._h / 2],
-            [0., 0., 1.]
-        ])
-
-    def _project_image_xy(self, xy):
-        N = len(xy)
-        xyz = np.zeros((N, 3))
-        xyz[:, 0] = xy[:, 0]
-        xyz[:, 1] = 1.4
-        xyz[:, 2] = xy[:, 1]
-
-        image_xy, _ = cv2.projectPoints(xyz, self._tran, self._rot, self._A,
-                                        None)
-        image_xy[..., 0] = np.clip(image_xy[..., 0], 0, self._w)
-        image_xy[..., 1] = np.clip(image_xy[..., 1], 0, self._h)
-
-        return image_xy[:, 0]
-
-    def __call__(self, map_locations):
-        teacher_locations = map_locations
-        teacher_locations = (teacher_locations + 1) * np.array([self._w, self._h]) / 2
-        teacher_locations //= 2
-        return teacher_locations.astype(int)
 
 
 class LocationLoss(torch.nn.Module):

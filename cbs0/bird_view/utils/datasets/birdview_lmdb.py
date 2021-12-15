@@ -20,7 +20,7 @@ import random
 
 PIXEL_OFFSET = 10
 N_TRAFFIC_LIGHT_STATES = 1
-SEG_CLASSES = {4, 6, 7, 10, 18}  # pedestrians, roadlines, roads, vehicles, trafficsigns
+SEG_CLASSES = {4, 6, 7, 10, 18}  # pedestrians, roadlines, roads, vehicles, tl
 
 
 class Location():
@@ -227,9 +227,9 @@ class BirdViewDataset(Dataset):
             return image, points
 
         image_aug, p_aug = self.seq(image=image,
-                                    keypoints=self.points_to_keypoints(points / 2, (80, 192)))
+                                    keypoints=self.points_to_keypoints(points / 2, (self.crop_size_y, self.crop_size)))
         temp = p_aug.to_xy_array()
-        if not np.all((temp[:, 0] <= 192) & (temp[:, 1] <= 80)):
+        if not np.all((temp[:, 0] <= self.crop_size) & (temp[:, 1] <= self.crop_size_y)):
             return self.augment_image(image, points, redo=redo + 1)
 
         return image_aug, temp
@@ -242,8 +242,13 @@ class BirdViewDataset(Dataset):
         ori = np.array([ori_x, ori_y, ori_z])
         ori /= np.linalg.norm(ori)  # Make unit vector
 
-        new_pos = pos + 4 * ori
-        return self.converter.convert(np.array([new_pos]))
+        #new_pos = pos + 4 * ori
+        fwd_2d_angle = np.deg2rad(ori_y) #yaw to rad
+        new_pos = pos + 5.5 * np.array([np.cos(fwd_2d_angle), np.sin(fwd_2d_angle), 0])
+        new_pos_cam_coords = self.converter.convert(np.array([new_pos]))
+        if(new_pos_cam_coords.shape[0] == 0):
+            return np.array([[192, 147, 0]]) # In the center of the image, almost at the bottom --> stop waypoint
+        return new_pos_cam_coords
 
     @staticmethod
     def interpolate_waypoints(points):
@@ -277,13 +282,15 @@ class BirdViewDataset(Dataset):
         #     vehicle = 0
         # ############################
 
+
+
+        output = []
         #if tl or vehicle or walker:
         if tl:
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x, ori_y, ori_z)
             output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
-            return output, True
+            return output, 3 # Traffic light --> stop
 
-        output = []
         for i in range(index, (index + (self.n_step + 1 + self.buffer * self.gap)), self.gap):
             if len(output) == self.n_step:
                 break
@@ -301,12 +308,13 @@ class BirdViewDataset(Dataset):
 
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x,ori_y, ori_z)
             output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
-            return output, True
+            #return output, True
+            return output, 2 # Less than two waypoints --> stop
 
         if 2 <= len(output) < self.n_step:
-            return self.interpolate_waypoints(np.array(output)), False
-
-        return np.array(output), False
+            return self.interpolate_waypoints(np.array(output)), 1 # Interpolation
+        #return np.array(output), False
+        return np.array(output), 0 # All waypoints ok
 
     def __getitem__(self, idx):
         lmdb_txn = self.file_map[idx]
@@ -317,7 +325,7 @@ class BirdViewDataset(Dataset):
 
         # Resize
         segmentation = self.down_scale(segmentation)
-        assert_shape = (80, 192)
+        assert_shape = (self.crop_size_y, self.crop_size)
         assert segmentation.shape == assert_shape, "Incorrect shape ({}), got {}".format(assert_shape, segmentation.shape)
 
         tl_info = int.from_bytes(lmdb_txn.get(('trafficlights_%04d' % index).encode()), 'little')
@@ -326,7 +334,7 @@ class BirdViewDataset(Dataset):
 
         ox, oy, oz = np.frombuffer(lmdb_txn.get(('loc_%04d'%index).encode()), np.float32)
         ori_ox, ori_oy, ori_oz = np.frombuffer(lmdb_txn.get(('rot_%04d'%index).encode()), np.float32)
-        speed = np.frombuffer(lmdb_txn.get(('spd_%04d'%index).encode()), np.float32)
+        speed = np.frombuffer(lmdb_txn.get(('spd_%04d'%index).encode()), np.float32)[0]
         cmd = int(np.frombuffer(lmdb_txn.get(('cmd_%04d'%index).encode()), np.float32)[0])
         cam_x, cam_y, cam_z = np.frombuffer(lmdb_txn.get(('cam_location_%04d'%index).encode()), np.float32)
         cam_pitch, cam_yaw, cam_roll = np.frombuffer(lmdb_txn.get(('cam_rotation_%04d'%index).encode()), np.float32)
@@ -344,23 +352,24 @@ class BirdViewDataset(Dataset):
             self.converter = CoordinateConverter(sensor_transform, fov=120)
 
             # Get waypoints in image coordinates (x, y)
-            image_coord_wp, full_stop = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy,ori_oz)
+            #image_coord_wp, full_stop = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy,ori_oz)
+            image_coord_wp, wp_method = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy,ori_oz)
             image_coord_wp = image_coord_wp[:,:2].astype(np.float32)
 
             self.gap = self.ori_gap  # Reset gap to its original value
 
-            # Augment image
+            #Augment image
             if self.is_train:
-                img_aug, points_aug = self.augment_image(segmentation, image_coord_wp)
+               img_aug, points_aug = self.augment_image(segmentation, image_coord_wp)
             else:
-                img_aug = segmentation
-                points_aug = image_coord_wp / 2
+               img_aug = segmentation
+               points_aug = image_coord_wp / 2
 
             img_aug = np.moveaxis(img_aug, -1, 0)
             img_aug = img_aug.astype(np.float32)
             points_aug = np.array(points_aug, dtype=np.float32)
 
-            assert_shape = (len(SEG_CLASSES), 80, 192)
+            assert_shape = (len(SEG_CLASSES), self.crop_size_y, self.crop_size)
             assert img_aug.shape == assert_shape, "Incorrect shape ({}), got {}".format(assert_shape, img_aug.shape)
             assert len(points_aug) == self.n_step, "Not enough points, got {}".format(points_aug.shape)
 
@@ -372,7 +381,7 @@ class BirdViewDataset(Dataset):
             #    speed = float(0)
             ###############################################
 
-            return img_aug, points_aug, cmd, speed
+            return img_aug, points_aug, cmd, speed, wp_method
 
         pixel_ox = 160
         pixel_oy = 260

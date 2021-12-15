@@ -3,9 +3,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
-print('AAAAA')
-#from .torchvision_050.models.detection.backbone_utils import resnet_fpn_backbone
-print('BBBBB')
 
 # FPN feature extractor relying on ResNet34 as backbone, followed by a
 # down-sampling of the obtained multi-scale merged feature maps using max pool,

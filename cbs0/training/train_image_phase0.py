@@ -13,7 +13,6 @@ import sys
 import cv2
 
 try:
-    sys.path.append(glob.glob('../PythonAPI')[0])
     sys.path.append(glob.glob('../bird_view')[0])
 except IndexError as e:
     pass

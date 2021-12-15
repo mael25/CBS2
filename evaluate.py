@@ -20,7 +20,7 @@ def main(args):
 
     port = args.port
     tm_port = port + 2
-
+    print('CANCJANDBJAJKDBJAK')
     for i in range(10,20):
         route = f'assets/routes_training/route_{i}.xml'
         #route = 'assets/routes_dev.xml'

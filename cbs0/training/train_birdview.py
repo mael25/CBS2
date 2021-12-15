@@ -15,10 +15,8 @@ import os
 import sys
 
 try:
-    #sys.path.append(glob.glob('../PythonAPI')[0])
     sys.path.append(glob.glob('../bird_view')[0])
 except IndexError as e:
-    print('test222')
     pass
 
 import utils.bz_utils as bzu
@@ -59,7 +57,7 @@ class LocationLoss(torch.nn.Module):
         return self.loss(pred_location, gt_location)
 
 
-def _log_visuals(birdview, speed, command, loss, locations, _locations,
+def _log_visuals(birdview, speed, command, loss, locations, _locations, wp_method,
                  size=16):
     import cv2
     import numpy as np
@@ -94,6 +92,11 @@ def _log_visuals(birdview, speed, command, loss, locations, _locations,
             3: 'STRAIGHT', 4: 'FOLLOW'}.get(
             torch.argmax(command[i]).item() + 1, '???')
 
+        _wp_method = {
+            0: 'OK', 1: 'Interp', 2: '<2',
+            3: 'TL'}.get(
+            torch.argmax(wp_method[i]).item(), '???')
+
         _dot(0, 0, WHITE)
 
         for x, y in locations[i]: _dot(x, y, BLUE)
@@ -103,6 +106,7 @@ def _log_visuals(birdview, speed, command, loss, locations, _locations,
 
         _write('Command: %s' % _command, 1, 0)
         _write('Loss: %.2f' % loss[i].item(), 2, 0)
+        _write('Wp: %s' % _wp_method, 3, 0)
 
         images.append((loss[i].item(), canvas))
 
@@ -124,7 +128,7 @@ def train_or_eval(criterion, net, data, optim, is_train, schedular, config,
 
     tick = time.time()
     epoch_loss = []
-    for i, (cheat, location, command, speed) in iterator:
+    for i, (cheat, location, command, speed, wp_method) in iterator:
         # if parsed.segmentation:
         #     del birdview
         #     birdview = segmentation.float()
@@ -159,7 +163,7 @@ def train_or_eval(criterion, net, data, optim, is_train, schedular, config,
 
             images = _log_visuals(
                 cheat, speed, command, loss,
-                location, pred_location)
+                location, pred_location, wp_method)
 
             bzu.log.scalar(is_train=is_train, loss_mean=loss_mean.item())
             bzu.log.image(is_train=is_train, birdview=images)

@@ -1,0 +1,8 @@
+12/10/21 15:22:56 INFO	train_loss_mean: 0.03	std: 0.00	min: 0.03	max: 0.03	n: 11
+12/10/21 15:22:56 INFO	train_fps: 1.33	std: 0.31	min: 0.37	max: 1.56	n: 11
+12/10/21 15:22:56 INFO	val_loss_mean: 0.00	std: 0.00	min: 0.00	max: 0.00	n: 10
+12/10/21 15:22:56 INFO	val_fps: 1.07	std: 0.05	min: 0.95	max: 1.13	n: 10
+12/10/21 15:24:02 INFO	train_loss_mean: 0.01	std: 0.00	min: 0.01	max: 0.01	n: 11
+12/10/21 15:24:02 INFO	train_fps: 1.33	std: 0.32	min: 0.32	max: 1.52	n: 11
+12/10/21 15:24:02 INFO	val_loss_mean: 0.00	std: 0.00	min: 0.00	max: 0.00	n: 10
+12/10/21 15:24:02 INFO	val_fps: 1.06	std: 0.04	min: 0.98	max: 1.12	n: 10

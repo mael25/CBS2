@@ -14,10 +14,12 @@ import math
 import random
 from utils.image_utils import CoordinateConverter
 
-import augmenter
+#import augmenter
+#from common.augmenter import augment
 
 PIXEL_OFFSET = 10
 PIXELS_PER_METER = 5
+SEG_CLASSES = {4, 6, 7, 10, 18}  # pedestrians, roadlines, roads, vehicles, tl
 
 def world_to_pixel(x,y,ox,oy,ori_ox, ori_oy, offset=(-80,160), size=320, angle_jitter=15):
     pixel_dx, pixel_dy = (x-ox)*PIXELS_PER_METER, (y-oy)*PIXELS_PER_METER
@@ -67,8 +69,6 @@ class ImageDataset(Dataset):
         n_step=5,
         gaussian_radius=1.,
         down_ratio=4,
-        # rgb_mean=[0.29813555, 0.31239682, 0.33620676],
-        # rgb_std=[0.0668446, 0.06680295, 0.07329721],
         augment_strategy=None,
         batch_read_number=819200,
         batch_aug=1,
@@ -98,15 +98,16 @@ class ImageDataset(Dataset):
 
         self.gaussian_radius = gaussian_radius
 
-        print("augment with ", augment_strategy)
-        if augment_strategy is not None and augment_strategy != 'None':
-            self.augmenter = getattr(augmenter, augment_strategy)
-        else:
-            self.augmenter = None
+        # print("augment with ", augment_strategy)
+        # if augment_strategy is not None and augment_strategy != 'None':
+        #     self.augmenter = getattr(augmenter, augment_strategy)
+        # else:
+        #     self.augmenter = None
+        print(f'WoR data augmentation approach, with batch_aug of {self.batch_aug} and p= 0.5')
+        self.augmenter = augment(0.5)
 
         count = 0
         for full_path in glob.glob('%s/**'%dataset_path):
-            # hdf5_file = h5py.File(full_path, 'r', libver='latest', swmr=True)
             lmdb_file = lmdb.open(full_path,
                  max_readers=1,
                  readonly=True,
@@ -132,6 +133,14 @@ class ImageDataset(Dataset):
     def __len__(self):
         return len(self.file_map)
 
+    def project_vehicle(self, x, y, z, ori_x, ori_y, ori_z):
+        pos = np.array([x, y, z])
+        ori = np.array([ori_x, ori_y, ori_z])
+        ori /= np.linalg.norm(ori)  # Make unit vector
+
+        new_pos = pos + 4 * ori
+        return self.converter.convert(np.array([new_pos]))
+
     @staticmethod
     def interpolate_waypoints(points):
         points = points[:, :2]
@@ -141,8 +150,8 @@ class ImageDataset(Dataset):
         z = np.polyfit(points[:, 0], points[:, 1], n_degree)
         p = np.poly1d(z)
 
-        # Keep interpolating until we have 5 points
-        while points.shape[0] < 5:
+        # Keep interpolating until we have n_step points
+        while points.shape[0] < self.n_step:
             points_2 = np.vstack([points[0], points[:-1]])
             max_id = np.argmax(np.linalg.norm(points - points_2, axis=1))
             _x = np.mean([points[max_id], points_2[max_id]], axis=0)[0]
@@ -150,40 +159,21 @@ class ImageDataset(Dataset):
 
         return points
 
-    def project_vehicle(self, x, y, z, ori_x, ori_y, ori_z):
-        pos = np.array([x, y, z])
-        ori = np.array([ori_x, ori_y, ori_z])
-        ori /= np.linalg.norm(ori)  # Make unit vector
-
-        new_pos = pos + 4 * ori
-        return self.converter.convert(np.array([new_pos]))
-
     def get_waypoints(self, index, lmdb_txn, world_x, world_y, world_z, ori_x, ori_y, ori_z):
         tl = int.from_bytes(lmdb_txn.get(('trafficlights_%04d' % index).encode()), 'little')
-        
-        ############################
-        # MODIF (11-09-2021)
-        if self.combine_seg:
-            vehicle = int.from_bytes(lmdb_txn.get(('vehicles_%04d' % index).encode()), 'little')
-            walker = int.from_bytes(lmdb_txn.get(('walkers_%04d' % index).encode()), 'little')
-        else:
-            #These variables won't be used if we are not using combined segmentation
-            walker = 0
-            vehicle = 0
-        ############################
 
-        if tl or vehicle or walker:
-            vehicle_proj = self.project_vehicle(world_x, world_y, world_z,
-                                                ori_x, ori_y, ori_z)
-            output = np.array([vehicle_proj[0] for _ in range(5)])
-            return output
+        #if tl or vehicle or walker:
+        if tl:
+            vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x, ori_y, ori_z)
+            output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
+            return output, True
 
         output = []
         for i in range(index, (index + (self.n_step + 1 + self.buffer * self.gap)), self.gap):
             if len(output) == self.n_step:
                 break
 
-            x, y, z = np.frombuffer(lmdb_txn.get(('measurements_%04d' % i).encode()), np.float32)[:3]
+            x, y, z = np.frombuffer(lmdb_txn.get(('loc_%04d' % i).encode()), np.float32)
             image_coords = self.converter.convert(np.array([[x, y, z]]))
             if len(image_coords) > 0:
                 output.append(image_coords[0])
@@ -195,13 +185,13 @@ class ImageDataset(Dataset):
                 return self.get_waypoints(index, lmdb_txn, world_x, world_y, world_z,ori_x, ori_y, ori_z)
 
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x,ori_y, ori_z)
-            output = np.array([vehicle_proj[0] for _ in range(5)])
-            return output
+            output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
+            return output, True
 
-        if 2 <= len(output) < 5:
-            return self.interpolate_waypoints(np.array(output))
+        if 2 <= len(output) < self.n_step:
+            return self.interpolate_waypoints(np.array(output)), False
 
-        return np.array(output)
+        return np.array(output), False
 
     @staticmethod
     def down_scale(img):
@@ -218,63 +208,63 @@ class ImageDataset(Dataset):
         index = self.idx_map[idx]
 
         # bird_view = np.frombuffer(lmdb_txn.get(('birdview_%04d'%index).encode()), np.uint8).reshape(320,320,7)
-        segmentation = np.frombuffer(lmdb_txn.get(('segmentation_%04d'%index).encode()), np.uint8).reshape(160, 384, 3)
+        segmentation = np.frombuffer(lmdb_txn.get(('segmentation_%04d'%index).encode()), np.uint8).reshape(160, 384)
         segmentation = self.down_scale(segmentation)
-        assert_shape = (80, 192, 3)
+        assert_shape = (80, 192)
         assert segmentation.shape == assert_shape, "Incorrect shape ({}), got {}".format(assert_shape, segmentation.shape)
 
         tl_info = int.from_bytes(lmdb_txn.get(('trafficlights_%04d' % index).encode()), 'little')
 
-        ############################
-        # MODIF (24-09-2021)
-        if self.combine_seg:
-            walker_info = int.from_bytes(lmdb_txn.get(('walkers_%04d' % index).encode()), 'little')
-            vehicle_info = int.from_bytes(lmdb_txn.get(('vehicles_%04d' % index).encode()), 'little')
-        else:
-            #These variables won't be used if we are not using combined segmentation (seg2D_to_ND_combined not called), but still need to give values
-            walker_info = 0
-            vehicle_info = 0
-        segmentation = seg2D_to_ND(segmentation, tl_info, walker_info, vehicle_info, combine=self.combine_seg).astype(np.float32)
-        #segmentation = seg2D_to_ND(segmentation, tl_info, combine=self.combine_seg).astype(np.float32)
-        #############################
+        segmentation = seg2D_to_ND(segmentation, tl_info).astype(np.float32)
 
-        measurement = np.frombuffer(lmdb_txn.get(('measurements_%04d'%index).encode()), np.float32)
+        ox, oy, oz = np.frombuffer(lmdb_txn.get(('loc_%04d'%index).encode()), np.float32)
+        ori_ox, ori_oy, ori_oz = np.frombuffer(lmdb_txn.get(('rot_%04d'%index).encode()), np.float32)
+        speed = np.frombuffer(lmdb_txn.get(('spd_%04d'%index).encode()), np.float32)[0]
+        cmd = int(np.frombuffer(lmdb_txn.get(('cmd_%04d'%index).encode()), np.float32)[0])
+        cam_x, cam_y, cam_z = np.frombuffer(lmdb_txn.get(('cam_location_%04d'%index).encode()), np.float32)
+        cam_pitch, cam_yaw, cam_roll = np.frombuffer(lmdb_txn.get(('cam_rotation_%04d'%index).encode()), np.float32)
+
         rgb_image = np.fromstring(lmdb_txn.get(('rgb_%04d'%index).encode()), np.uint8).reshape(160,384,3)
 
+        # if self.augmenter:
+        #     rgb_images = [self.augmenter(self.batch_read_number).augment_image(rgb_image) for i in range(self.batch_aug)]
+        # else:
+        #     rgb_images = [rgb_image for i in range(self.batch_aug)]
+        #
+        # if self.batch_aug == 1:
+        #     rgb_images = rgb_images[0]
+
         if self.augmenter:
-            rgb_images = [self.augmenter(self.batch_read_number).augment_image(rgb_image) for i in range(self.batch_aug)]
+            rgb_images = [self.augmenter(rgb_image) for i in range(self.batch_aug)]
         else:
             rgb_images = [rgb_image for i in range(self.batch_aug)]
 
         if self.batch_aug == 1:
             rgb_images = rgb_images[0]
 
-        ox, oy, oz, ori_ox, ori_oy, ori_oz, vx, vy, vz, cam_x, cam_y, cam_z, cam_yaw, cam_roll, cam_pitch, ax, ay, az, cmd, steer, throttle, brake, manual, gear  = measurement
-        speed = np.linalg.norm([vx,vy,vz])
-
         # Create coordinate transformer
         sensor_transform = Transform(Location(cam_x, cam_y, cam_z),
-                                     Rotation(cam_yaw, cam_roll,
-                                              cam_pitch))
+                                     Rotation(cam_pitch, cam_yaw, cam_roll))
         self.converter = CoordinateConverter(sensor_transform, fov=120)
 
         # Get waypoints in image coordinates (x, y)
-        image_coord_wp = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy, ori_oz)[:,:2].astype(np.float32)
+        image_coord_wp, full_stop = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy,ori_oz)
+        image_coord_wp = image_coord_wp[:,:2].astype(np.float32)
+
         self.gap = self.ori_gap  # Reset gap to its original value
 
         segmentation = segmentation.astype(np.float32)
         image_coord_wp = np.array(image_coord_wp, dtype=np.float32)
 
-        assert_shape = (80, 192, 7) if self.combine_seg else (80, 192, 13)
+        assert_shape = (80, 192, len(SEG_CLASSES))
         assert segmentation.shape == assert_shape, "Incorrect shape ({}), got {}".format(assert_shape, segmentation.shape)
-        assert len(image_coord_wp) == 5, "Not enough points, got {}".format(image_coord_wp.shape)
+        assert len(image_coord_wp) == self.n_step, "Not enough points, got {}".format(image_coord_wp.shape)
 
         if self.batch_aug == 1:
             rgb_images = self.rgb_transform(rgb_images)
         else:
-            # if len()
-            #     import pdb; pdb.set_trace()
             rgb_images = torch.stack([self.rgb_transform(img) for img in rgb_images])
+
         segmentation = self.bird_view_transform(segmentation)
 
         self.batch_read_number += 1
@@ -290,8 +280,6 @@ def load_image_data(dataset_path,
         gap=10,
         augment=None,
         **kwargs
-        # rgb_mean=[0.29813555, 0.31239682, 0.33620676],
-        # rgb_std=[0.0668446, 0.06680295, 0.07329721],
     ):
 
     dataset = ImageDataset(
@@ -300,8 +288,6 @@ def load_image_data(dataset_path,
         gap=gap,
         augment_strategy=augment,
         **kwargs,
-        # rgb_mean=rgb_mean,
-        # rgb_std=rgb_std,
     )
 
     return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle, drop_last=True, pin_memory=True)
@@ -330,8 +316,6 @@ def get_image(
         dataset_dir,
         batch_size=32, num_workers=0, shuffle=True, augment=None,
         n_step=5, gap=5, batch_aug=1):
-
-    # import pdb; pdb.set_trace()
 
     def make_dataset(dir_name, is_train):
         _dataset_dir = str(Path(dataset_dir) / dir_name)
