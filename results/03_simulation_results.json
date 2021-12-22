@@ -1,0 +1,50 @@
+{
+    "_checkpoint": {
+        "global_record": {},
+        "progress": [
+            1,
+            7600
+        ],
+        "records": [
+            {
+                "index": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [
+                        "Agent deviated from the route at (x=118.46, y=199.304, z=0.033)"
+                    ],
+                    "route_timeout": [],
+                    "stop_infraction": [],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 73.75000109896064,
+                    "duration_system": 382.03722643852234,
+                    "route_length": 737.4217028017997
+                },
+                "route_id": "RouteScenario_0",
+                "scores": {
+                    "score_composed": 52.290095066610306,
+                    "score_penalty": 1.0,
+                    "score_route": 52.290095066610306
+                },
+                "status": "Failed - Agent deviated from the route"
+            }
+        ]
+    },
+    "eligible": false,
+    "entry_status": "Started",
+    "labels": [],
+    "sensors": [
+        "carla_collision",
+        "carla_map",
+        "carla_speedometer",
+        "carla_camera",
+        "carla_sem"
+    ],
+    "values": []
+}

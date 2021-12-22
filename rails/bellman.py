@@ -16,10 +16,10 @@ class BellmanUpdater(object):
 
     _speeds = None
     _orient = None
-    
+
     @staticmethod
     def setup(config, ego_model, device=torch.device('cuda')):
-        
+
         # Discretization ranges
         BellmanUpdater._max_steers = config['max_steers']
         BellmanUpdater._max_throts = config['max_throts']
@@ -27,13 +27,13 @@ class BellmanUpdater(object):
         BellmanUpdater._max_speeds = config['max_speeds'] # m/s
         BellmanUpdater._min_orient = math.pi/180*config['min_orient'] # degree to radian
         BellmanUpdater._max_orient = math.pi/180*config['max_orient'] # radian
-        
+
         # Discretization precision
         BellmanUpdater._num_steers = config['num_steers']
         BellmanUpdater._num_throts = config['num_throts']
         BellmanUpdater._num_speeds = config['num_speeds']
         BellmanUpdater._num_orient = config['num_orient']
-        
+
         # Target speeds
         BellmanUpdater._tgt_speeds = torch.tensor([
             config['turn_tgt_speeds'],
@@ -43,7 +43,7 @@ class BellmanUpdater(object):
             config['lane_tgt_speeds'],
             config['lane_tgt_speeds']
         ]).float().to(device)
-        
+
         BellmanUpdater._turn_tgt_speeds = config['turn_tgt_speeds']
         BellmanUpdater._lane_tgt_speeds = config['lane_tgt_speeds']
 
@@ -64,21 +64,21 @@ class BellmanUpdater(object):
         _steers = np.append(np.tile(_steers, BellmanUpdater._num_throts), 0)
         _throts = np.append(np.repeat(_throts, BellmanUpdater._num_steers), 0)
         _brakes = np.append(np.zeros(len(_steers)-1), 1)
-    
+
         BellmanUpdater._actions = torch.tensor(np.stack([_steers,_throts,_brakes], axis=-1)).float().to(BellmanUpdater._device)
-    
+
         # Brak reward: used at peds/vehicles/red lights
         BellmanUpdater._brak_rews = torch.zeros(BellmanUpdater._num_steers*BellmanUpdater._num_throts+1).float().to(BellmanUpdater._device)
         BellmanUpdater._brak_rews[-1] = 1
-        
+
         # Thro reward: used at zero-speed at stop signs
         BellmanUpdater._thro_rews = torch.zeros(BellmanUpdater._num_steers*BellmanUpdater._num_throts+1).float().to(BellmanUpdater._device)
         BellmanUpdater._thro_rews[-BellmanUpdater._num_steers//2-1] = 1
-        
+
         BellmanUpdater._brak_rew = config['brak_rew']
         BellmanUpdater._thro_rew = config['thro_rew']
         BellmanUpdater._stop_rew = config['stop_rew']
-        
+
         # Shift grids
         grid_x = torch.linspace(-1,1,96).unsqueeze(0).repeat(96,1).unsqueeze(-1)
         grid_y = torch.linspace(-1,1,96).unsqueeze(0).repeat(96,1).unsqueeze(-1)
@@ -116,9 +116,14 @@ class BellmanUpdater(object):
 
 
     @staticmethod
-    def get_reward(lbl, loc_offsets, ref_yaw=0):
+    def get_reward(lbl, loc_offsets, ref_yaw=0, tls=1):
 
         road, lane, stop, red, vehicle, pedestrian = map(lambda x: x[...,0], np.split(lbl[...,:6],6,axis=-1))
+
+        # Edited : give reward for braking at red light only when we are close enough (determined by threshold in data collector)
+        if not tls:
+            red = 0 * red
+
         waypoints = lbl[...,6:]
 
         free = torch.tensor((road>0)&(vehicle==0)&(pedestrian==0),dtype=torch.float32).expand(BellmanUpdater._num_speeds,BellmanUpdater._num_orient,-1,-1).to(BellmanUpdater._device)
@@ -201,11 +206,11 @@ class BellmanUpdater(object):
 
     @staticmethod
     def _lane_change_filter(mask, orient, ref_yaw, offset, lane_change):
-        
+
         x_offset, y_offset = offset
-        
+
         peek_x, peek_y = 48 + x_offset*PIXELS_PER_METER, 48 + y_offset*PIXELS_PER_METER
-        
+
         if lane_change:
             peek_x += np.cos(ref_yaw)*PIXELS_PER_METER*BellmanUpdater._lane_tgt_speeds*BellmanUpdater._dt
             peek_y += np.sin(ref_yaw)*PIXELS_PER_METER*BellmanUpdater._lane_tgt_speeds*BellmanUpdater._dt
@@ -253,7 +258,7 @@ class BellmanUpdater(object):
         w = (x1-x)[(..., ) + (None,)*(len(v.shape)-1)]
         w0 = torch.where((w>=0)&(w<v.shape[0]), w, torch.zeros_like(w))
         w1 = torch.where((w>=0)&(w<v.shape[0]), 1-w, torch.zeros_like(w))
-        
+
         x0 = torch.clamp(x0,min=0,max=v.shape[0]-1)
         x1 = torch.clamp(x1,min=0,max=v.shape[0]-1)
 
@@ -264,13 +269,13 @@ class BellmanUpdater(object):
         D = v.shape[-1]
         x = (x - min_val)/(max_val-min_val)*(D-1)
         x = x[(...,)+(None,)*len(v.shape[1:])]
-        
+
         x0, x1 = torch.clamp(x.to(int), min=0), torch.clamp(x.to(int)+1, max=D-1)
         w = x - x0
-        
+
         output = (1-w)*v.gather(-1, torch.ones_like(v[...,-1:]).long()*x0) + \
                   w *v.gather(-1, torch.ones_like(v[...,-1:]).long()*x1)
-        
+
         return output.squeeze(-1)
 
     @staticmethod
@@ -285,13 +290,13 @@ class BellmanUpdater(object):
         ws = w.flatten()[:,None,None]
         # print (D)
         Ds = torch.arange(D,device=v.device)[None,:,None]
-        
+
         r = torch.zeros_like(vs)
         dx0 = dx0.view(-1,1).expand(vs.shape[-1],-1,1).permute(1,2,0)
         dx1 = dx1.view(-1,1).expand(vs.shape[-1],-1,1).permute(1,2,0)
-        
+
         r = torch.where(
-            (dx0+Ds>=0)&(dx1+Ds<D), 
+            (dx0+Ds>=0)&(dx1+Ds<D),
             (1-ws)*vs.gather(1,torch.clamp(dx0+Ds,min=0,max=D-1))+\
             ws    *vs.gather(1,torch.clamp(dx1+Ds,min=0,max=D-1)),
             torch.zeros_like(vs))
@@ -323,7 +328,7 @@ class BellmanUpdater(object):
             brak_rew = brak_rews[t]
             stop_rew = stop_rews[t]
             free = frees[t]
-            
+
             Q = BellmanUpdater.compute_Q(delta_locs, delta_yaws, next_spds, V, waypoint_rew, stop_rew, free)
             V, _ = Q.max(dim=0)
 
@@ -335,25 +340,25 @@ class BellmanUpdater(object):
                 Q = BellmanUpdater.shift(Q, locs[t])
                 Q = Q + brak_rew[None] * BellmanUpdater._brak_rews[:,None,None,None,None]
                 # Q = Q + thro_rew[None] * BellmanUpdater._thro_rews[:,None,None,None,None]
-                
+
         if visualize is not None:
-            
+
             V_axes, Q_axis1, Q_axis2, rotate, buff = visualize
-            
+
             # One last max
             # V, _ = Q.max(dim=0)
-            
+
             import matplotlib.pyplot as plt
-            import itertools 
+            import itertools
             # f, axes = plt.subplots(BellmanUpdater._num_throts,BellmanUpdater._num_steers,figsize=(BellmanUpdater._num_steers*3,BellmanUpdater._num_throts*3))
             # for i, j in itertools.product(range(BellmanUpdater._num_throts), range(BellmanUpdater._num_steers)):
             #     axes[i,j].imshow(Q[i*BellmanUpdater._num_steers+j,0,BellmanUpdater._num_orient//2].detach().cpu().numpy())
-            
+
             # f, axes = plt.subplots(BellmanUpdater._num_speeds,BellmanUpdater._num_orient,figsize=(BellmanUpdater._num_orient*2,BellmanUpdater._num_speeds*2))
             # for i, j in itertools.product(range(BellmanUpdater._num_speeds), range(BellmanUpdater._num_orient)):
             #     # axes[i,j].imshow(V[i,j].detach().cpu().numpy())
             #     axes[i,j].imshow(waypoint_rews[0,i,j].detach().cpu().numpy(), cmap=plt.get_cmap('gray'), vmin=0,vmax=2)
-            
+
             # f, axes = plt.subplots(BellmanUpdater._num_speeds,BellmanUpdater._num_orient,figsize=(BellmanUpdater._num_orient*2,BellmanUpdater._num_speeds*2))
             # vmin, vmax = V.min(), V.max()+0.5
             vmin, vmax = 0, 2
@@ -366,27 +371,27 @@ class BellmanUpdater(object):
                 V_axes[i][j].spines['bottom'].set_visible(False)
                 V_axes[i][j].spines['left'].set_visible(False)
                 # axes[i,j].imshow(waypoint_rews[0,i,j].detach().cpu().numpy())
-            
+
             # import pdb; pdb.set_trace()
-        
-        
+
+
         # Extract action
         delta_locs, delta_yaws, spds = map(lambda x: x.to(Q.device), extract)
-            
+
         Na, Ns, No, Nh, Nw = Q.size()
-        
+
         qs, all_qs = [], []
         for delta_loc, delta_yaw, spd in zip(delta_locs, delta_yaws, spds):
             all_q = F.grid_sample(Q.view(1,-1,Nh,Nw), delta_loc[None,None,None]*PIXELS_PER_METER).view(-1,Na,Ns,No)
             all_q = BellmanUpdater._batch_lerp(all_q, delta_yaw[None], min_val=BellmanUpdater._min_orient, max_val=BellmanUpdater._max_orient)
             q = BellmanUpdater._batch_lerp(all_q, spd[None], min_val=BellmanUpdater._min_speeds, max_val=BellmanUpdater._max_speeds)
-        
+
             qs.append(q)
             if dense_action_values:
                 all_qs.append(Q)
             else:
                 all_qs.append(all_q)
-        
+
         if visualize is not None:
             qs[0][0,-1] -= 0.5
             max_q = float(max(qs[0][0]))
@@ -400,7 +405,7 @@ class BellmanUpdater(object):
                 # Add the patch to the Axes
                 Q_axis2.add_patch(rect)
             else:
-                
+
                 y, x = torch.nonzero(qs[0][0,:27].reshape(3,9)==max_q)[0]
                 x, y = float(x), float(y)
                 rect = Rectangle((x-0.52, y-0.49), 1, 1, linewidth=2, edgecolor='red', facecolor='none')
@@ -412,7 +417,7 @@ class BellmanUpdater(object):
 
     @staticmethod
     def compute_Q(delta_locs, delta_yaws, next_spds, V0, waypoint_rew, stop_rew, free):
-        
+
         Q = BellmanUpdater._lerp(V0 + waypoint_rew + stop_rew, next_spds)
         Q = BellmanUpdater._batch_shift_lerp(Q, delta_yaws,        2)
         Q = BellmanUpdater._batch_shift_lerp(Q, delta_locs[...,1], 3)
