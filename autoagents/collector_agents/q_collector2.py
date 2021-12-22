@@ -19,6 +19,7 @@ from rails.models import EgoModel
 from autoagents.waypointer import Waypointer
 
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
+from agents.tools.misc import is_within_distance_ahead
 
 def get_entry_point():
     return 'QCollector'
@@ -51,13 +52,6 @@ class QCollector(AutonomousAgent):
     """
 
     def setup(self, path_to_conf_file):
-        print('Collector agent setup')
-        vehicles = CarlaDataProvider._client.get_world().get_actors().filter('vehicle.*')
-        for v in vehicles:
-            if v.attributes['role_name'] == 'hero':
-                print(v)
-                self.ego_actor = v
-                break;
         """
         Setup the agent parameters
         """
@@ -99,8 +93,29 @@ class QCollector(AutonomousAgent):
 
         self.stop_count = 0
 
-        self.ego_actor = None
+        self._world = None
+        self._vehicle = None
+        self._map = None
         self.ego_cam = None
+
+        self._proximity_tlight_threshold = 2.5  # meters
+
+    def setup_environment(self):
+        self._world = CarlaDataProvider._client.get_world()
+        vehicles = self._world.get_actors().filter('vehicle.*')
+        for v in vehicles:
+            if v.attributes['role_name'] == 'hero':
+                self._vehicle = v
+                break
+
+        self._map = self._world.get_map()
+
+        cams = self._world.get_actors().filter('sensor.camera.rgb')
+        for c in cams:
+            print(c)
+            if(c.attributes.get('fov') == '120'):
+                self.ego_cam = c
+                break;
 
     def destroy(self):
         if len(self.lbls) == 0:
@@ -216,26 +231,13 @@ class QCollector(AutonomousAgent):
         rgbs.append(rgb[...,:3]) # Keeping R, G and B channels
         segmentations.append(segmentation[...,2]) # Labels are encoded in the 2nd channel
 
-
         _, lbl = input_data.get('MAP')
         _, col = input_data.get('COLLISION')
         _, ego = input_data.get('EGO')
         _, gps = input_data.get('GPS')
 
-        if self.ego_actor is None:
-            vehicles = CarlaDataProvider._client.get_world().get_actors().filter('vehicle.*')
-            for v in vehicles:
-                if v.attributes['role_name'] == 'hero':
-                    self.ego_actor = v
-                    break;
-
-        if self.ego_cam is None:
-            cams = CarlaDataProvider._client.get_world().get_actors().filter('sensor.camera.rgb')
-            for c in cams:
-                print(c)
-                if(c.attributes.get('fov') == '120'):
-                    self.ego_cam = c
-                    break;
+        if self._world is None:
+            self.setup_environment()
 
         cam_location = self.ego_cam.get_transform().location
         cam_location = np.array([cam_location.x, cam_location.y, cam_location.z])
@@ -243,22 +245,25 @@ class QCollector(AutonomousAgent):
         cam_rotation = self.ego_cam.get_transform().rotation
         cam_rotation = np.array([cam_rotation.pitch, cam_rotation.yaw, cam_rotation.roll])
 
-        # Modify traffic light label of segmentation (discard it if no red light)
-        relevant_traffic_light = CarlaDataProvider.get_next_traffic_light(self.ego_actor, False)
-        if relevant_traffic_light is not None:
-            is_relevant_red_traffic_light_red = relevant_traffic_light.get_state() != carla.TrafficLightState.Green # Yellow is considered Red
-        else:
-            is_relevant_red_traffic_light_red = False
-        print(is_relevant_red_traffic_light_red)
-        print(1 in lbl[...,3])
+        # # Modify traffic light label of segmentation (discard it if no red light)
+        # relevant_traffic_light = CarlaDataProvider.get_next_traffic_light(self.ego_actor, False)
+        # if relevant_traffic_light is not None:
+        #     is_relevant_red_traffic_light_red = relevant_traffic_light.get_state() != carla.TrafficLightState.Green # Yellow is considered Red
+        # else:
+        #     is_relevant_red_traffic_light_red = False
+        # print(is_relevant_red_traffic_light_red)
+        # print(1 in lbl[...,3])
+        #
+        #
+        # tls = (1 in lbl[...,3]) and is_relevant_red_traffic_light_red # Relevant traffic light is red and visible in the birdview
+        # print(tls)
+        # print('-------------------------------')
 
+        lights_list = self._world.get_actors().filter("*traffic_light*")
+        tls, _ = self._is_light_red(lights_list)
 
-        tls = (1 in lbl[...,3]) and is_relevant_red_traffic_light_red # Relevant traffic light is red and visible in the birdview
-        print(tls)
-        print('-------------------------------')
         if not tls:
             segmentation[segmentation == 18] = 0
-
 
         if self.waypointer is None:
             self.waypointer = Waypointer(self._global_plan, gps)
@@ -276,7 +281,7 @@ class QCollector(AutonomousAgent):
 
         # Convert lbl to rew maps
         lbl_copy = lbl.copy()
-        waypoint_rews, stop_rews, brak_rews, free = BellmanUpdater.get_reward(lbl_copy, [0,0], ref_yaw=yaw/180*math.pi)
+        waypoint_rews, stop_rews, brak_rews, free = BellmanUpdater.get_reward(lbl_copy, [0,0], ref_yaw=yaw/180*math.pi, tls=tls)
 
         waypoint_rews = waypoint_rews[None].expand(self.num_plan, *waypoint_rews.shape)
         brak_rews = brak_rews[None].expand(self.num_plan, *brak_rews.shape)
@@ -350,6 +355,70 @@ class QCollector(AutonomousAgent):
         self.num_frames += 1
 
         return carla.VehicleControl(steer=actual_steer, throttle=throt, brake=brake)
+
+    ################################################################################
+    # agents.navigation.Agent utilities (as of Carla 0.9.10.1)
+    ################################################################################
+
+    def _is_light_red(self, lights_list):
+        """
+        Method to check if there is a red light affecting us. This version of
+        the method is compatible with both European and US style traffic lights.
+
+        :param lights_list: list containing TrafficLight objects
+        :return: a tuple given by (bool_flag, traffic_light), where
+                 - bool_flag is True if there is a traffic light in RED
+                   affecting us and False otherwise
+                 - traffic_light is the object itself or None if there is no
+                   red traffic light affecting us
+        """
+        ego_vehicle_location = self._vehicle.get_location()
+        ego_vehicle_waypoint = self._map.get_waypoint(ego_vehicle_location)
+
+        for traffic_light in lights_list:
+            object_location = self._get_trafficlight_trigger_location(traffic_light)
+            object_waypoint = self._map.get_waypoint(object_location)
+
+            if object_waypoint.road_id != ego_vehicle_waypoint.road_id:
+                continue
+
+            ve_dir = ego_vehicle_waypoint.transform.get_forward_vector()
+            wp_dir = object_waypoint.transform.get_forward_vector()
+            dot_ve_wp = ve_dir.x * wp_dir.x + ve_dir.y * wp_dir.y + ve_dir.z * wp_dir.z
+
+            if dot_ve_wp < 0:
+                continue
+
+            if is_within_distance_ahead(object_waypoint.transform,
+                                        self._vehicle.get_transform(),
+                                        self._proximity_tlight_threshold):
+                if traffic_light.state != carla.TrafficLightState.Green:
+                    return (True, traffic_light)
+
+        return (False, None)
+
+    def _get_trafficlight_trigger_location(self, traffic_light):  # pylint: disable=no-self-use
+        """
+        Calculates the yaw of the waypoint that represents the trigger volume of the traffic light
+        """
+        def rotate_point(point, radians):
+            """
+            rotate a given point by a given angle
+            """
+            rotated_x = math.cos(radians) * point.x - math.sin(radians) * point.y
+            rotated_y = math.sin(radians) * point.x - math.cos(radians) * point.y
+
+            return carla.Vector3D(rotated_x, rotated_y, point.z)
+
+        base_transform = traffic_light.get_transform()
+        base_rot = base_transform.rotation.yaw
+        area_loc = base_transform.transform(traffic_light.trigger_volume.location)
+        area_ext = traffic_light.trigger_volume.extent
+
+        point = rotate_point(carla.Vector3D(0, 0, area_ext.z), math.radians(base_rot))
+        point_location = area_loc + carla.Location(x=point.x, y=point.y)
+
+        return carla.Location(point_location.x, point_location.y, point_location.z)
 
 
 def _random_string(length=10):
