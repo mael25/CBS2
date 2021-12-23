@@ -10,7 +10,7 @@ To do this, we test several approaches used for multi-scale perception such as [
 The aim is to be able to integrate these modules as seamlessly as possible in the existent architecture
 and keeping it end-to-end.
 
-It has also been adapted to work with Carla 0.9.10.1 which allows to evaluate its performance on Carla's leaderboard.
+It has also been adapted to work with Carla 0.9.10.1 which allows to evaluate its performance using Carla's scenario runner.
 The dataset is collected on Carla 0.9.10.1, using the agent implemented in World on Rails, slightly modified so that it brakes
 closer to traffic lights and gather all the data needed for the CBS models.
 
