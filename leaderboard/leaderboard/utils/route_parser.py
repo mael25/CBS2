@@ -62,6 +62,7 @@ class RouteParser(object):
 
             new_config = RouteScenarioConfiguration()
             new_config.town = route.attrib['town']
+            print(new_config.town)
             new_config.name = "RouteScenario_{}".format(route_id)
             new_config.weather = RouteParser.parse_weather(route)
             new_config.scenario_file = scenario_file
@@ -95,7 +96,7 @@ class RouteParser(object):
             for weather_attrib in route.iter("weather"):
 
                 if 'cloudiness' in weather_attrib.attrib:
-                    weather.cloudiness = float(weather_attrib.attrib['cloudiness']) 
+                    weather.cloudiness = float(weather_attrib.attrib['cloudiness'])
                 if 'precipitation' in weather_attrib.attrib:
                     weather.precipitation = float(weather_attrib.attrib['precipitation'])
                 if 'precipitation_deposits' in weather_attrib.attrib:
