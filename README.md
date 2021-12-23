@@ -1,71 +1,76 @@
-# World on Rails - CBS2
+# CBS2
 
-![teaser](assets/teaser.jpg)
-> [**Learning to drive from a world on rails**](https://dotchen.github.io/world_on_rails/)    
-> Dian Chen, Vladlen Koltun, Philipp Kr&auml;henb&uuml;hl,        
-> _arXiv techical report ([arXiv 2105.00636](https://arxiv.org/abs/2105.00636))_
+This project is based on [Learning by Cheating](https://github.com/dotchen/LearningByCheating) (LBC) and Cheating by Segmentation (CBS).
+It follows the work of CBS which replaced the bird's-eye view semantically segmented
+image used to train the teacher in LBC.
 
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/learning-to-drive-from-a-world-on-rails/autonomous-driving-on-carla-leaderboard)](https://paperswithcode.com/sota/autonomous-driving-on-carla-leaderboard?p=learning-to-drive-from-a-world-on-rails)
+CBS2 focus on adding modules within the student network architecture (trained with an RGB image)
+in order to favor the perception of traffic lights without decreasing the perception of larger objects.
+To do this, we test several approaches used for multi-scale perception such as Pyramid Pooling Module and Feature Pyramid Network.
+The aim is to be able to integrate these modules as seamlessly as possible in the existent architecture
+and keeping it end-to-end.
 
-This repo contains code for our paper [Learning to drive from a world on rails](https://arxiv.org/abs/2105.00636).
+It has also been adapted to work with Carla 0.9.10.1 which allows to evaluate its performance on Carla's leaderboard.
+The dataset is collected on Carla 0.9.10.1, using the agent implemented in World on Rails, slightly modified so that it brakes
+closer to traffic lights and gather all the data needed for the CBS models.
 
-ProcGen code coming soon.
+### Code source
 
-## Reference
-If you find our repo or paper useful, please cite us as
-```bibtex
-@inproceedings{chen2021learning,
-  title={Learning to drive from a world on rails},
-  author={Chen, Dian and Koltun, Vladlen and Kr{\"a}henb{\"u}hl, Philipp},
-  booktitle={ICCV},
-  year={2021}
-}
+This repository contains code from other sources
+- Not modified:
+  - [Carla Leaderboard](https://github.com/carla-simulator/leaderboard)
+  - [Carla Scenario Runner](https://github.com/carla-simulator/scenario_runner)
+
+  (Instructions on how to setup Carla and the leaderboard / scenario runner available below and at https://leaderboard.carla.org/get_started)
+
+- Modified:
+  - [World on rails](https://github.com/dotchen/WorldOnRails)
+  - [Cheating by Segmentation](https://github.com/thomasvanorden/LBS.git) (branch: segmentation)
+
+
+### Installing Carla
+
+##### Install Carla in desired location
 ```
-
-## Updates
-* We have released the pre-computed Q values in our dataset! Check [DATASET.md](docs/DATASET.md) for details.
-* Checkout our [website](https://dotchen.github.io/world_on_rails/) for demo videos!
-
-## Getting Started
-* To run CARLA and train the models, make sure you are using a machine with **at least** a mid-end GPU.
-* Please follow [INSTALL.md](docs/INSTALL.md) to setup the environment.
-
-## Training
-
-* Please refer to [RAILS.md](docs/RAILS.md) on how to train our _World-on-Rails_ agent.
-* Please refer to [LBC.md](docs/LBC.md) on how to train the _LBC_ agent.
-
-## Evaluation
-
-**If you evaluating the pretrained weights, make sure you are launching CARLA with `-vulkan`!**
-
-### Leaderboard routes
+wget https://carla-releases.s3.eu-west-3.amazonaws.com/Linux/CARLA_0.9.10.1.tar.gz
+tar -xvzf CARLA_0.9.10.1.tar.gz -C carla09101
+```
+##### Clone CBS2 repository (branch: cbs2) in desired location
 ```bash
-python evaluate.py --agent-config=[PATH TO CONFIG]
+git clone git@github.com:mael25/CBS2.git
+cd CBS2
+git checkout cbs2
 ```
-
-### NoCrash routes
+##### If not already done, install conda and then create and activate this new virtual environment
 ```bash
-python evaluate_nocrash.py --town={Town01,Town02} --weather={train, test} --agent-config=[PATH TO CONFIG] --resume
+conda env create -f docs/cbs2.yml
+conda activate cbs2
 ```
-* Use defaults for _RAILS_, and `--agent=autoagents/lbc_agent` for _LBC_.
-* To print a readable table, use
+##### To add more package to the environment
+
+- conda: ```conda install <package>```
+- conda-forge: ```conda install -c conda-forge <package>```
+- pip: ```~/anaconda3/envs/cbs2/bin/pip install <package>```
+
+
+##### Add the following environmnet variables to ~/.bashrc
 ```bash
-python -m scripts.view_nocrash_results [PATH TO CONFIG.YAML]
+export CARLA_ROOT=<your_path>/carla09101
+export CBS2_ROOT=<your_path>/CBS2
+export LEADERBOARD_ROOT=${CBS2_ROOT}/leaderboard
+export SCENARIO_RUNNER_ROOT=${CBS2_ROOT}/scenario_runner
+export PYTHONPATH=${PYTHONPATH}:"${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}":"${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg"
 ```
+##### Verify the setup by launching Carla (with cbs2 virtual environmnet activated):
+```bash
+source ~/.bashrc
+$CBS2_ROOT/scripts/launch_carla.sh 1 2000
+```
+Note: be sure to have cbs2 virtual environmnet activated
+### Data collection
 
-### Pretrained weights
-* [Leaderboard models](https://utexas.box.com/s/8lcl7istkr23dtjqqiyu0v8is7ha5u2r)
-* [NoCrash models](https://utexas.box.com/s/54m24gz5xwy1oagsqmgosch7pq561h2e)
 
-## Dataset
-We also release the data we trained for the leaderboard.
-Checkout [DATASET.md](docs/DATASET.md) for more details.
+### Training
 
-## Acknowledgements
-The `leaderboard` codes are built from the original [leaderboard](https://github.com/carla-simulator/leaderboard.git) repo.
-The `scenariorunner` codes are from the original [scenario_runner](https://github.com/carla-simulator/scenario_runner.git) repo.
-The `waypointer.py` GPS coordinate conversion codes are build from Marin Toromanoff's leadeboard submission.
 
-## License
-This repo is released under the MIT License (please refer to the LICENSE file for details). The [leaderboard](https://github.com/carla-simulator/leaderboard.git) repo which our `leaderboard` folder builds upon is under the MIT License.
+### Evaluation

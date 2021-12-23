@@ -1,4 +1,4 @@
-name: cbsmerged
+name: cbs2
 channels:
   - conda-forge
   - anaconda
