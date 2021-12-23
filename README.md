@@ -1,12 +1,12 @@
 # CBS2
 
-This project is based on [Learning by Cheating](https://github.com/dotchen/LearningByCheating) (LBC) and Cheating by Segmentation (CBS).
+This project is based on [Learning by Cheating](https://github.com/dotchen/LearningByCheating) (LBC) and [Cheating by Segmentation](https://github.com/thomasvanorden/LBS) (CBS).
 It follows the work of CBS which replaced the bird's-eye view semantically segmented
 image used to train the teacher in LBC.
 
 CBS2 focus on adding modules within the student network architecture (trained with an RGB image)
 in order to favor the perception of traffic lights without decreasing the perception of larger objects.
-To do this, we test several approaches used for multi-scale perception such as Pyramid Pooling Module and Feature Pyramid Network.
+To do this, we test several approaches used for multi-scale perception such as [Pyramid Pooling Module](https://arxiv.org/abs/1612.01105) and [Feature Pyramid Network](https://arxiv.org/abs/1612.03144).
 The aim is to be able to integrate these modules as seamlessly as possible in the existent architecture
 and keeping it end-to-end.
 
@@ -25,7 +25,7 @@ This repository contains code from other sources
 
 - Modified:
   - [World on rails](https://github.com/dotchen/WorldOnRails)
-  - [Cheating by Segmentation](https://github.com/thomasvanorden/LBS.git) (branch: segmentation)
+  - [Cheating by Segmentation](https://github.com/thomasvanorden/LBS) (branch: segmentation)
 
 
 ### Installing Carla
