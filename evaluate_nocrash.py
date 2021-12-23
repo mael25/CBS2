@@ -2,6 +2,13 @@ from runners import NoCrashEvalRunner
 
 def main(args):
 
+    if(args.mod == 'fpn'):
+        args.agent_config = 'results/nocrash_fpn.yaml'
+    elif(args.mod == 'ppm'):
+        args.agent_config = 'results/nocrash_ppm.yaml'
+    else:
+        args.agent_config = 'results/nocrash_original.yaml'
+
     town = args.town
     weather = args.weather
 
@@ -22,9 +29,11 @@ if __name__ == '__main__':
     #parser.add_argument('--agent', default='autoagents/image_agent')
     #parser.add_argument('--agent', default='autoagents/lbc_agent')
     #parser.add_argument('--agent', default='autoagents/cbs_agent')
-    parser.add_argument('--agent', default='autoagents/cbs0_agent')
-    #parser.add_argument('--agent-config', default='experiments/config_nocrash.yaml')
-    parser.add_argument('--agent-config', default='results/config_nocrash_my.yaml')
+    parser.add_argument('--agent', default='autoagents/cbs2_agent')
+    #parser.add_argument('--agent-config', default='results/config_nocrash_cbs2.yaml')
+    parser.add_argument("--mod", type=str,
+                        default='original',
+                        help="Perception module (original, ppm, fpn)")
 
     # Benchmark configs
     parser.add_argument('--town', required=True, choices=['Town01', 'Town02'])

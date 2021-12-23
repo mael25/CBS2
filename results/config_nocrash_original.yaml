@@ -1,0 +1,7 @@
+camera_x: 1.5
+camera_z: 2.4
+log_wandb: True
+
+# Location of student model to evaluate (evaluate_nocrash.py)
+rgb_model_dir: cbs0/reference/cbs-model-XX.th
+

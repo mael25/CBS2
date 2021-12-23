@@ -1,5 +1,8 @@
 simulation_results.json
 
+# All folders or sub-folders with the name .notsaved won't be considered
+**/.notsaved/
+
 # Byte-compiled / optimized / DLL files
 *.out
 logs/*

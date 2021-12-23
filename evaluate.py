@@ -5,22 +5,22 @@ def main(args):
     scenario = 'assets/all_towns_traffic_scenarios.json'
     # scenario = 'assets/no_scenarios.json'
 
-    args.agent = 'autoagents/cbs0_agent'
-    #args.agent = 'autoagents/image_agent'
-    #args.agent = 'autoagents/collector_agents/lidar_q_collector'
-    #args.agent_config = 'config.yaml'
+
+    #parser.add_argument('--agent', default='autoagents/image_agent')
+    #parser.add_argument('--agent', default='autoagents/lbc_agent')
+    #parser.add_argument('--agent', default='autoagents/cbs_agent')
+    args.agent = 'autoagents/cbs2_agent'
 
     if(args.mod == 'fpn'):
-        args.agent_config = 'results_lead/lead_fpn.yaml'
+        args.agent_config = 'results_lead/config_lead_fpn.yaml'
     elif(args.mod == 'ppm'):
-        args.agent_config = 'results_lead/lead_ppm.yaml'
+        args.agent_config = 'results_lead/config_lead_ppm.yaml'
     else:
-        args.agent_config = 'results_lead/lead_original.yaml'
-    # args.agent_config = 'config_lidar.yaml'
+        args.agent_config = 'results_lead/config_lead_original.yaml'
 
     port = args.port
     tm_port = port + 2
-    print('CANCJANDBJAJKDBJAK')
+    print('TEMPORARY: RUNNING ROUTES 10 to 20')
     for i in range(10,20):
         route = f'assets/routes_training/route_{i}.xml'
         #route = 'assets/routes_dev.xml'

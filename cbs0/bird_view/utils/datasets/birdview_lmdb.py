@@ -239,8 +239,8 @@ class BirdViewDataset(Dataset):
 
     def project_vehicle(self, x, y, z, ori_x, ori_y, ori_z):
         pos = np.array([x, y, z])
-        ori = np.array([ori_x, ori_y, ori_z])
-        ori /= np.linalg.norm(ori)  # Make unit vector
+        #ori = np.array([ori_x, ori_y, ori_z])
+        #ori /= np.linalg.norm(ori)  # Make unit vector
 
         #new_pos = pos + 4 * ori
         fwd_2d_angle = np.deg2rad(ori_y) #yaw to rad

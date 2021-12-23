@@ -23,13 +23,8 @@ class CoordConverter():
         return teacher_locations.astype(int)
 
 STEPS = 5
-SPEED_STEPS = 3
 COMMANDS = 4
 DT = 0.1
-CROP_SIZE = 192
-PIXELS_PER_METER = 5
-N_TRAFFIC_LIGHT_STATES = 1
-CLASSES = {4, 6, 7, 10, 18}  # pedestrians, roadlines, roads, vehicles, tl
 
 
 # def seg2D_to_ND_combined(seg, tl_info, walker_info, vehicle_info):

@@ -98,11 +98,14 @@ class ImageDataset(Dataset):
 
         self.gaussian_radius = gaussian_radius
 
+        # CBS RGB image augmentation
         # print("augment with ", augment_strategy)
         # if augment_strategy is not None and augment_strategy != 'None':
         #     self.augmenter = getattr(augmenter, augment_strategy)
         # else:
         #     self.augmenter = None
+
+        # For CBS2, we use WoR RGB image augmentation
         print(f'WoR data augmentation approach, with batch_aug of {self.batch_aug} and p= 0.5')
         self.augmenter = augment(0.5)
 
