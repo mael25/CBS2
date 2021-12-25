@@ -138,8 +138,8 @@ class ImageDataset(Dataset):
 
     def project_vehicle(self, x, y, z, ori_x, ori_y, ori_z):
         pos = np.array([x, y, z])
-        ori = np.array([ori_x, ori_y, ori_z])
-        ori /= np.linalg.norm(ori)  # Make unit vector
+        #ori = np.array([ori_x, ori_y, ori_z])
+        #ori /= np.linalg.norm(ori)  # Make unit vector
 
         #new_pos = pos + 4 * ori
         fwd_2d_angle = np.deg2rad(ori_y) #yaw to rad
@@ -170,13 +170,17 @@ class ImageDataset(Dataset):
     def get_waypoints(self, index, lmdb_txn, world_x, world_y, world_z, ori_x, ori_y, ori_z):
         tl = int.from_bytes(lmdb_txn.get(('trafficlights_%04d' % index).encode()), 'little')
 
+        output = []
         #if tl or vehicle or walker:
-        if tl:
+        if speed < 0.005:
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x, ori_y, ori_z)
             output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
-            return output, True
+            if tl:
+                return output, 3 # Stop TL
+            else:
+                return output, 4 # Stop obstacle
 
-        output = []
+
         for i in range(index, (index + (self.n_step + 1 + self.buffer * self.gap)), self.gap):
             if len(output) == self.n_step:
                 break
@@ -194,12 +198,12 @@ class ImageDataset(Dataset):
 
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x,ori_y, ori_z)
             output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
-            return output, True
+            return output, 2 # Less than two waypoints --> stop
 
         if 2 <= len(output) < self.n_step:
-            return self.interpolate_waypoints(np.array(output)), False
+            return self.interpolate_waypoints(np.array(output)), 1 # Interpolation
 
-        return np.array(output), False
+        return np.array(output), 0 # All waypoints ok
 
     @staticmethod
     def down_scale(img):
@@ -256,7 +260,7 @@ class ImageDataset(Dataset):
         self.converter = CoordinateConverter(sensor_transform, fov=120)
 
         # Get waypoints in image coordinates (x, y)
-        image_coord_wp, full_stop = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy,ori_oz)
+        image_coord_wp, wp_method = self.get_waypoints(index, lmdb_txn, ox, oy, oz,ori_ox, ori_oy,ori_oz)
         image_coord_wp = image_coord_wp[:,:2].astype(np.float32)
 
         self.gap = self.ori_gap  # Reset gap to its original value
@@ -277,7 +281,7 @@ class ImageDataset(Dataset):
 
         self.batch_read_number += 1
 
-        return rgb_images, segmentation, image_coord_wp, cmd, speed
+        return rgb_images, segmentation, image_coord_wp, cmd, speed, wp_method
 
 
 def load_image_data(dataset_path,

@@ -286,11 +286,13 @@ class BirdViewDataset(Dataset):
 
         output = []
         #if tl or vehicle or walker:
-        if tl:
+        if speed < 0.005:
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x, ori_y, ori_z)
             output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
-            return output, 3 # Traffic light --> stop
-
+            if tl:
+                return output, 3 # Stop TL
+            else:
+                return output, 4 # Stop obstacle
         for i in range(index, (index + (self.n_step + 1 + self.buffer * self.gap)), self.gap):
             if len(output) == self.n_step:
                 break

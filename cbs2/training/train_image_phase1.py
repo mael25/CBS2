@@ -76,7 +76,7 @@ class LocationLoss(torch.nn.Module):
 
         return torch.mean(torch.abs(pred_locations - teac_locations), dim=(1,2,3))
 
-def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _teac_locations, size=8):
+def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _teac_locations, wp_method, size=8):
     import cv2
     import numpy as np
     import utils.carla_utils as cu
@@ -120,6 +120,11 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
                 1: 'LEFT', 2: 'RIGHT',
                 3: 'STRAIGHT', 4: 'FOLLOW'}.get(torch.argmax(command[i]).item()+1, '???')
 
+        _wp_method = {
+            0: 'OK', 1: 'Interp', 2: '<2',
+            3: 'TL Stop', 4: 'Obs Stop'}.get(
+            torch.argmax(wp_method[i]).item(), '???')
+
         _dot(canvas, 0, 0, WHITE)
 
         for x, y in _teac_locations[i]: _dot(canvas, x, y, BLUE)
@@ -129,6 +134,8 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
 
         _write('Command: %s' % _command, 1, 0)
         _write('Loss: %.2f' % loss[i].item(), 2, 0)
+        _write('Wp: %s' % _wp_method, 3, 0)
+        _write('Spd: %.2f' % speed, 4, 0)
 
         images.append((loss[i].item(), _stick_together(rgb, canvas)))
 
@@ -200,7 +207,7 @@ def train_or_eval(coord_converter, coord_converter_teach, criterion, net,
     import torch.distributions as tdist
     noiser = tdist.Normal(torch.tensor(0.0), torch.tensor(config['speed_noise']))
 
-    for i, (rgb_image, birdview, location, command, speed) in iterator:
+    for i, (rgb_image, birdview, location, command, speed, wp_method) in iterator:
         rgb_image = rgb_image.to(config['device'])
         birdview = birdview.to(config['device'])
         command = one_hot(command).to(config['device'])
@@ -249,7 +256,7 @@ def train_or_eval(coord_converter, coord_converter_teach, criterion, net,
 
             images = _log_visuals(
                     rgb_image, birdview, speed, command, loss,
-                    (_pred_location+1)*coord_converter._img_size/2, (_teac_location+1)*coord_converter._img_size/2)
+                    (_pred_location+1)*coord_converter._img_size/2, (_teac_location+1)*coord_converter._img_size/2, wp_method)
 
             bzu.log.scalar(is_train=is_train, loss_mean=loss_mean.item())
             bzu.log.image(is_train=is_train, birdview=images)
