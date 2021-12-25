@@ -1,0 +1,12 @@
+12/10/21 13:04:12 INFO	train_loss_mean: 0.32	std: 0.00	min: 0.32	max: 0.32	n: 11
+12/10/21 13:04:12 INFO	train_fps: 4.47	std: 2.43	min: 0.65	max: 8.06	n: 11
+12/10/21 13:04:12 INFO	val_loss_mean: 0.31	std: 0.00	min: 0.30	max: 0.31	n: 10
+12/10/21 13:04:12 INFO	val_fps: 4.79	std: 0.44	min: 3.55	max: 5.07	n: 10
+12/10/21 13:04:44 INFO	train_loss_mean: 0.32	std: 0.00	min: 0.32	max: 0.32	n: 11
+12/10/21 13:04:44 INFO	train_fps: 4.37	std: 2.17	min: 0.64	max: 7.46	n: 11
+12/10/21 13:04:44 INFO	val_loss_mean: 0.31	std: 0.00	min: 0.30	max: 0.31	n: 10
+12/10/21 13:04:44 INFO	val_fps: 4.89	std: 0.43	min: 3.75	max: 5.40	n: 10
+12/10/21 13:06:56 INFO	train_loss_mean: 0.32	std: 0.00	min: 0.32	max: 0.32	n: 1
+12/10/21 13:06:56 INFO	train_fps: 8.90	std: 2.53	min: 0.36	max: 15.96	n: 1000
+12/10/21 13:06:56 INFO	val_loss_mean: 0.02	std: 0.00	min: 0.02	max: 0.03	n: 10
+12/10/21 13:06:56 INFO	val_fps: 5.27	std: 0.53	min: 4.37	max: 5.96	n: 10

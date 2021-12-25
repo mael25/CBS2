@@ -259,7 +259,7 @@ class BirdViewDataset(Dataset):
         z = np.polyfit(points[:, 0], points[:, 1], n_degree)
         p = np.poly1d(z)
 
-        # Keep interpolating until we have n_step points
+        # Keep interpolating until we have n_step=5 points
         while points.shape[0] < 5:
             points_2 = np.vstack([points[0], points[:-1]])
             max_id = np.argmax(np.linalg.norm(points - points_2, axis=1))
@@ -270,6 +270,7 @@ class BirdViewDataset(Dataset):
 
     def get_waypoints(self, index, lmdb_txn, world_x, world_y, world_z, ori_x, ori_y, ori_z):
         tl = int.from_bytes(lmdb_txn.get(('trafficlights_%04d' % index).encode()), 'little')
+        speed = np.frombuffer(lmdb_txn.get(('spd_%04d' % index).encode()), np.float32)[0]
 
         # ############################
         # # MODIF (11-09-2021)

@@ -15,7 +15,7 @@ import random
 from utils.image_utils import CoordinateConverter
 
 #import augmenter
-#from common.augmenter import augment
+from augmenter_wor import augment
 
 PIXEL_OFFSET = 10
 PIXELS_PER_METER = 5
@@ -158,8 +158,8 @@ class ImageDataset(Dataset):
         z = np.polyfit(points[:, 0], points[:, 1], n_degree)
         p = np.poly1d(z)
 
-        # Keep interpolating until we have n_step points
-        while points.shape[0] < self.n_step:
+        # Keep interpolating until we have n_step=5 points
+        while points.shape[0] < 5:
             points_2 = np.vstack([points[0], points[:-1]])
             max_id = np.argmax(np.linalg.norm(points - points_2, axis=1))
             _x = np.mean([points[max_id], points_2[max_id]], axis=0)[0]
@@ -169,6 +169,7 @@ class ImageDataset(Dataset):
 
     def get_waypoints(self, index, lmdb_txn, world_x, world_y, world_z, ori_x, ori_y, ori_z):
         tl = int.from_bytes(lmdb_txn.get(('trafficlights_%04d' % index).encode()), 'little')
+        speed = np.frombuffer(lmdb_txn.get(('spd_%04d'%index).encode()), np.float32)[0]
 
         output = []
         #if tl or vehicle or walker:
@@ -238,16 +239,8 @@ class ImageDataset(Dataset):
 
         rgb_image = np.fromstring(lmdb_txn.get(('rgb_%04d'%index).encode()), np.uint8).reshape(160,384,3)
 
-        # if self.augmenter:
-        #     rgb_images = [self.augmenter(self.batch_read_number).augment_image(rgb_image) for i in range(self.batch_aug)]
-        # else:
-        #     rgb_images = [rgb_image for i in range(self.batch_aug)]
-        #
-        # if self.batch_aug == 1:
-        #     rgb_images = rgb_images[0]
-
         if self.augmenter:
-            rgb_images = [self.augmenter(rgb_image) for i in range(self.batch_aug)]
+            rgb_images = [self.augmenter(image=rgb_image) for i in range(self.batch_aug)]
         else:
             rgb_images = [rgb_image for i in range(self.batch_aug)]
 

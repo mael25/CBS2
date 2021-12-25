@@ -107,7 +107,7 @@ def _log_visuals(birdview, speed, command, loss, locations, _locations, wp_metho
         _write('Command: %s' % _command, 1, 0)
         _write('Loss: %.2f' % loss[i].item(), 2, 0)
         _write('Wp: %s' % _wp_method, 3, 0)
-        _write('Spd: %.2f' % speed, 4, 0)
+        _write('Spd: %.2f' % speed[0], 4, 0)
 
         images.append((loss[i].item(), canvas))
 
