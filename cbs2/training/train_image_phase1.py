@@ -122,7 +122,7 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
 
         _wp_method = {
             0: 'OK', 1: 'Interp', 2: '<2',
-            3: 'TL Stop', 4: 'Obs Stop'}.get(
+            3: 'Stop(TL)', 4: 'Stop(Obs)'}.get(
             torch.argmax(wp_method[i]).item(), '???')
 
         _dot(canvas, 0, 0, WHITE)
@@ -135,7 +135,7 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
         _write('Command: %s' % _command, 1, 0)
         _write('Loss: %.2f' % loss[i].item(), 2, 0)
         _write('Wp: %s' % _wp_method, 3, 0)
-        _write('Spd: %.2f' % speed[0], 4, 0)
+        _write('Spd: %.2f' % speed[i].item(), 4, 0)
 
         images.append((loss[i].item(), _stick_together(rgb, canvas)))
 
