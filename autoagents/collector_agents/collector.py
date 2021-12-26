@@ -29,7 +29,7 @@ STOP_THRESH = 0.1
 MAX_STOP = 500
 
 class OrnsteinUhlenbeckActionNoise:
-    def __init__(self, mu=0, sigma=0.1, theta=0.1, dt=0.1, x0=None):
+    def __init__(self, mu=0, sigma=0.03, theta=0.03, dt=0.03, x0=None):
         self.theta = theta
         self.mu = mu
         self.sigma = sigma
