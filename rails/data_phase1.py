@@ -9,14 +9,16 @@ def main(args):
     scenario = 'assets/no_scenarios.json'
     #route = 'assets/routes_all.xml'
     route = 'assets/routes_all.xml'
-    route = 'assets/routes_town01_p1.xml'
+    ###route = 'assets/routes_town01_p1.xml'
     # route = 'assets/routes_training/route_10.xml'
 
     args.agent = 'autoagents/collector_agents/collector'
-    args.agent_config = 'autoagents/collector_agents/config_data_collection.yaml'
+    ###args.agent_config = 'autoagents/collector_agents/config_data_collection.yaml'
 
     jobs = []
     for i in range(args.num_runners):
+        route = 'assets/routes_town01_'+str(i)+'.xml'
+        args.agent_config = 'autoagents/collector_agents/config_data_collection_'+str(i)+'.yaml'
         # scenario_class = 'train_scenario' # Use 'nocrash_train_scenario' to collect NoCrash training trajs
         scenario_class = args.scenario
         town = towns.get(i, 'Town03')

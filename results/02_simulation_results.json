@@ -2,18 +2,78 @@
     "_checkpoint": {
         "global_record": {},
         "progress": [
-            0,
-            7600
+            2,
+            200
         ],
-        "records": []
+        "records": [
+            {
+                "index": 0,
+                "infractions": {
+                    "collisions_layout": [
+                        "Agent collided against object with type=static.pole and id=0 at (x=-0.58, y=170.74, z=0.134)"
+                    ],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [],
+                    "route_timeout": [],
+                    "stop_infraction": [],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 98.20000146329403,
+                    "duration_system": 661.8257322311401,
+                    "route_length": 533.0058098516755
+                },
+                "route_id": "RouteScenario_4",
+                "scores": {
+                    "score_composed": 36.417335282153466,
+                    "score_penalty": 0.65,
+                    "score_route": 56.02666966485149
+                },
+                "status": "Failed - Agent crashed"
+            },
+            {
+                "index": 1,
+                "infractions": {
+                    "collisions_layout": [
+                        "Agent collided against object with type=static.wall and id=0 at (x=12.682, y=23.214, z=0.107)"
+                    ],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "outside_route_lanes": [],
+                    "red_light": [],
+                    "route_dev": [],
+                    "route_timeout": [],
+                    "stop_infraction": [
+                        "Agent ran a stop with id=5462 at (x=-65.597, y=-139.815, z=0.0)"
+                    ],
+                    "vehicle_blocked": []
+                },
+                "meta": {
+                    "duration_game": 128.1500019095838,
+                    "duration_system": 876.6874330043793,
+                    "route_length": 533.0058098516755
+                },
+                "route_id": "RouteScenario_4",
+                "scores": {
+                    "score_composed": 36.463257389068275,
+                    "score_penalty": 0.52,
+                    "score_route": 70.1216488251313
+                },
+                "status": "Failed - Agent crashed"
+            }
+        ]
     },
-    "eligible": "",
-    "entry_status": "",
+    "eligible": false,
+    "entry_status": "Started",
     "labels": [],
     "sensors": [
         "carla_collision",
         "carla_map",
         "carla_speedometer",
+        "carla_gnss",
         "carla_camera",
         "carla_sem"
     ],
