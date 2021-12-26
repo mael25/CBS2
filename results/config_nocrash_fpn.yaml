@@ -6,4 +6,3 @@ log_wandb: True
 rgb_model_dir: cbs0/reference/ref_stud_fpn/fpn-50.th
 
 fpn: True
-
