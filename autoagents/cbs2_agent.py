@@ -16,10 +16,10 @@ from utils import visualize_obs, _numpy
 
 from autoagents.waypointer import Waypointer
 
-from cbs0.bird_view.models import common
-from cbs0.bird_view.models.controller import CustomController, PIDController
-from cbs0.bird_view.models.controller import ls_circle
-from cbs0.bird_view.models.image import PPM, ImagePolicyModelSS
+from cbs2.bird_view.models import common
+from cbs2.bird_view.models.controller import CustomController, PIDController
+from cbs2.bird_view.models.controller import ls_circle
+from cbs2.bird_view.models.image import PPM, ImagePolicyModelSS
 
 import torchvision.transforms as transforms
 
@@ -31,7 +31,7 @@ def get_entry_point():
 
 class CBS2Agent(AutonomousAgent):
     """
-    CBS0 Image agent
+    CBS2 Image agent (Student)
     """
 
     def setup(self, path_to_conf_file):
@@ -44,6 +44,10 @@ class CBS2Agent(AutonomousAgent):
 
         for key, value in config.items():
             setattr(self, key, value)
+        if not hasattr(self, 'ppm_bins'):
+            self.ppm_bins=[]
+        if not hasattr(self, 'fpn'):
+            self.fpn=False
 
         self.device = torch.device('cuda')
         self.vizs = []

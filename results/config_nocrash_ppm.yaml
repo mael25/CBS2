@@ -1,0 +1,8 @@
+camera_x: 1.5
+camera_z: 2.4
+log_wandb: True
+
+# Location of student model to evaluate (evaluate_nocrash.py)
+rgb_model_dir: cbs2/reference/ref_stud_original/ppm-50.th
+
+ppm_bins: 1-2-3-6

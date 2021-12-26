@@ -3,11 +3,11 @@ from runners import NoCrashEvalRunner
 def main(args):
 
     if(args.mod == 'fpn'):
-        args.agent_config = 'results/nocrash_fpn.yaml'
+        args.agent_config = 'results/config_nocrash_fpn.yaml'
     elif(args.mod == 'ppm'):
-        args.agent_config = 'results/nocrash_ppm.yaml'
+        args.agent_config = 'results/config_nocrash_ppm.yaml'
     else:
-        args.agent_config = 'results/nocrash_original.yaml'
+        args.agent_config = 'results/config_nocrash_original.yaml'
 
     town = args.town
     weather = args.weather
