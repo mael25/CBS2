@@ -82,8 +82,8 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
     import utils.carla_utils as cu
 
     WHITE = [255, 255, 255]
-    BLUE = [0, 0, 255]
-    RED = [255, 0, 0]
+    GREEN = [0, 255, 0] # Teacher
+    ORANGE = [255, 100, 0] # Student
     _numpy = lambda x: x.detach().cpu().numpy().copy()
 
     images = list()
@@ -93,6 +93,7 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
         canvas = np.uint8(_numpy(birdview[i]).transpose(1, 2, 0) * 255).copy()
         canvas = cu.visualize_birdview(canvas)
         rgb = np.uint8(_numpy(rgb_image[i]).transpose(1, 2, 0) * 255).copy()
+        rgb = rgb[:, :, [2, 1, 0]] # BGR to RGB
         rows = [x * (canvas.shape[0] // 10) for x in range(10+1)]
         cols = [x * (canvas.shape[1] // 10) for x in range(10+1)]
 
@@ -127,10 +128,10 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
 
         _dot(canvas, 0, 0, WHITE)
 
-        for x, y in _teac_locations[i]: _dot(canvas, x, y, BLUE)
-        for x, y in _teac_locations[i]: _dot(rgb, x, y, BLUE)
-        for x, y in _pred_locations[i]: _dot(rgb, x, y, RED)
-        for x, y in _pred_locations[i]: _dot(canvas, x, y, RED)
+        for x, y in _teac_locations[i]: _dot(canvas, x, y, GREEN)
+        for x, y in _teac_locations[i]: _dot(rgb, x, y, GREEN)
+        for x, y in _pred_locations[i]: _dot(rgb, x, y, ORANGE)
+        for x, y in _pred_locations[i]: _dot(canvas, x, y, ORANGE)
 
         _write('Command: %s' % _command, 1, 0)
         _write('Loss: %.2f' % loss[i].item(), 2, 0)
