@@ -44,15 +44,13 @@ TRAIN_WEATHERS = {
 
 WEATHERS = list(TRAIN_WEATHERS.values())
 
-BACKGROUND = [0, 47, 0]
+BACKGROUND = [0, 47, 0] # Background (dark green)
 COLORS = [
-    (102, 102, 102),
-    (253, 253, 17),
-    (204, 6, 5),
-    (250, 210, 1),
-    (39, 232, 51),
-    # (0, 0, 142),
-    # (220, 20, 60)
+    (0, 179, 255), # Pedestrians (blue)
+    (255, 255, 255), # Road lines (white)
+    (70, 70, 70), # Road (dark grey)
+    (250, 210, 1), # Vehicles (yellow)
+    (204, 6, 5), # Red light (red)
 ]
 
 TOWNS = ['Town01', 'Town02', 'Town03', 'Town04']
@@ -187,13 +185,11 @@ def process(observations):
 
 def visualize_birdview(birdview):
     """
-    0 road
-    1 lane
-    2 red light
-    3 yellow light
-    4 green light
-    5 vehicle
-    6 pedestrian
+    0 pedestrian
+    1 road lines
+    2 road
+    3 vehicle
+    4 red traffic light
     """
     h, w = birdview.shape[:2]
     canvas = np.zeros((h, w, 3), dtype=np.uint8)

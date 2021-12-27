@@ -111,7 +111,7 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, pred_locations, teac
         def _write(text, i, j):
             cv2.putText(
                     canvas, text, (cols[j], rows[i]),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255,255,255), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)
 
         def _dot(_canvas, i, j, color, radius=2):
             x, y = int(j), int(i)
@@ -133,7 +133,7 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, pred_locations, teac
                 3: 'STRAIGHT', 4: 'FOLLOW'}.get(torch.argmax(command[i]).item()+1, '???')
 
         _wp_method = {
-            0: 'OK', 1: 'Interp', 2: '<2',
+            0: 'InFrame', 1: 'Intrpl', 2: '<2',
             3: 'Stop(TL)', 4: 'Stop(Obs)'}.get(
             torch.argmax(wp_method[i]).item(), '???')
 
@@ -143,10 +143,10 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, pred_locations, teac
         for x, y in teac_locations[i]: _dot(rgb, x, y, GREEN)
         for x, y in pred_locations[i]: _dot(rgb, x, y, ORANGE)
 
-        _write('Command: %s' % _command, 1, 0)
+        _write('%s' % _command, 1, 0)
         _write('Loss: %.2f' % loss[i].item(), 2, 0)
-        _write('Wp: %s' % _wp_method, 3, 0)
-        _write('Spd: %.2f' % speed[i].item(), 4, 0)
+        _write('%s' % _wp_method, 3, 0)
+        _write('Spd: %.2f' % np.abs(speed[i].item()), 4, 0)
 
         images.append((loss[i].item(), _stick_together(rgb, canvas)))
 
