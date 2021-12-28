@@ -44,10 +44,14 @@ class CBS2Agent(AutonomousAgent):
 
         for key, value in config.items():
             setattr(self, key, value)
-        if not hasattr(self, 'ppm_bins'):
-            self.ppm_bins=[]
+
+        if hasattr(self, 'ppm_bins'):
+            self.ppm_bins = list(map(int, self.ppm_bins.split("-"))) # "1-2-3-6" --> [1, 2, 3, 6]
+        else:
+            self.ppm_bins = None
+
         if not hasattr(self, 'fpn'):
-            self.fpn=False
+            self.fpn = False
 
         self.device = torch.device('cuda')
         self.vizs = []
