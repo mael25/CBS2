@@ -57,7 +57,7 @@ def visualize_big(rgb, yaw, control, speed, cmd=None, lbl=None, sem=None, text_a
 
     return canvas
 
-def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=None, map=None, sem=None, lidar=None, tls=None, pred=None, controlw=None, predw=None, text_args=(cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)):
+def visualize_obs(rgb, yaw, control, speed, target_speed=None, cmd=None, red=None, lbl=None, tgt=None, map=None, sem=None, lidar=None, tls=None, pred=None, controlw=None, predw=None, text_args=(cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,255), 1)):
     """
     0 road
     1 lane
@@ -102,7 +102,7 @@ def visualize_obs(rgb, yaw, control, speed, cmd=None, red=None, lbl=None, tgt=No
         lidar_viz = cv2.cvtColor(lidar_viz,cv2.COLOR_GRAY2RGB)
         canvas = np.concatenate([canvas, cv2.resize(lidar_viz.astype(np.uint8), (canvas.shape[0], canvas.shape[0]))], axis=1)
 
-    cv2.putText(canvas, f'speed: {speed:.3f}m/s', (4, 10), *text_args)
+    cv2.putText(canvas, f'spd: {speed:.2f}m/s targ_spd: {target_speed:.2f}m/s', (4, 10), *text_args)
     cv2.putText(
         canvas,
         f'steer: {control[0]:.3f} throttle: {control[1]:.3f} brake: {control[2]:.3f}',
