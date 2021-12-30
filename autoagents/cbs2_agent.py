@@ -157,6 +157,8 @@ class CBS2Agent(AutonomousAgent):
         _, _, cmd = self.waypointer.tick(gps)
 
         speed = ego.get('spd')
+
+        # Test 29 dec - outdated, replaced by offset given only to the network
         #speed = speed +1.6
         # if timestamp <3:
         #     speed=3.0
@@ -166,11 +168,17 @@ class CBS2Agent(AutonomousAgent):
 
         _rgb = torch.tensor(_rgb[None]).float().permute(0,3,1,2).to(self.device)
         #print(f'RGB size: {_rgb.size()}')
-        _speed = torch.tensor([speed+1.6]).float().to(self.device)
+
+
+        #_speed = torch.tensor([speed]).float().to(self.device) #original
+        #_speed = torch.tensor([speed+1.6]).float().to(self.device) #29dec
+        _speed = torch.tensor([np.clip(speed+1.6, 0.0, 6.5)]).float().to(self.device) #30dec
 
         with torch.no_grad():
             _rgb = self.transform(rgb).to(self.device).unsqueeze(0)
-            _speed = torch.FloatTensor([speed+1.6]).to(self.device)
+            #_speed = torch.FloatTensor([speed]).to(self.device) #original
+            #_speed = torch.FloatTensor([speed+1.6]).to(self.device) #29dec
+            _speed = torch.FloatTensor([np.clip(speed+1.6, 0.0, 6.5)]).to(self.device)
             _command = command.to(self.device).unsqueeze(0)
             model_pred = self.model(_rgb, _speed, _command)
 
@@ -205,7 +213,7 @@ class CBS2Agent(AutonomousAgent):
 
         target_speed = np.linalg.norm(targets[:-1] - targets[1:], axis=1).mean() / (self.gap * DT)
 
-        target_speed = np.clip(target_speed, 0.0, 5)
+        target_speed = np.clip(target_speed, 0.0, 5.0)
 
         c, r = ls_circle(targets)
         n = self.steer_points.get(str(_cmd), 1)
@@ -217,7 +225,8 @@ class CBS2Agent(AutonomousAgent):
         w = [closest[0], closest[1], 0.0]
         alpha = common.signed_angle(v, w)
 
-        steer = self.turn_control.run_step(alpha, _cmd)/3
+        #steer = self.turn_control.run_step(alpha, _cmd) #original - outdated since new dataset
+        steer = self.turn_control.run_step(alpha, _cmd)/3 #29dec
         throttle = self.speed_control.step(acceleration)
         brake = 0.0
 
