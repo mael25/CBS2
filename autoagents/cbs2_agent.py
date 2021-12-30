@@ -172,13 +172,13 @@ class CBS2Agent(AutonomousAgent):
 
         #_speed = torch.tensor([speed]).float().to(self.device) #original
         #_speed = torch.tensor([speed+1.6]).float().to(self.device) #29dec
-        _speed = torch.tensor([np.clip(speed+1.6, 0.0, 6.5)]).float().to(self.device) #30dec
+        _speed = torch.tensor([np.clip(speed+1.6, 0.0, 5.0)]).float().to(self.device) #30dec
 
         with torch.no_grad():
             _rgb = self.transform(rgb).to(self.device).unsqueeze(0)
             #_speed = torch.FloatTensor([speed]).to(self.device) #original
             #_speed = torch.FloatTensor([speed+1.6]).to(self.device) #29dec
-            _speed = torch.FloatTensor([np.clip(speed+1.6, 0.0, 6.5)]).to(self.device)
+            _speed = torch.FloatTensor([np.clip(speed+1.6, 0.0, 5.0)]).to(self.device)
             _command = command.to(self.device).unsqueeze(0)
             model_pred = self.model(_rgb, _speed, _command)
 
