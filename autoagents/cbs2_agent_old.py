@@ -157,20 +157,17 @@ class CBS2Agent(AutonomousAgent):
         _, _, cmd = self.waypointer.tick(gps)
 
         speed = ego.get('spd')
-        #speed = speed +1.6
-        # if timestamp <3:
-        #     speed=3.0
 
         _cmd = cmd.value
         command = self.one_hot[_cmd - 1]
 
         _rgb = torch.tensor(_rgb[None]).float().permute(0,3,1,2).to(self.device)
         #print(f'RGB size: {_rgb.size()}')
-        _speed = torch.tensor([speed+1.6]).float().to(self.device)
+        _speed = torch.tensor([speed]).float().to(self.device)
 
         with torch.no_grad():
             _rgb = self.transform(rgb).to(self.device).unsqueeze(0)
-            _speed = torch.FloatTensor([speed+1.6]).to(self.device)
+            _speed = torch.FloatTensor([speed]).to(self.device)
             _command = command.to(self.device).unsqueeze(0)
             model_pred = self.model(_rgb, _speed, _command)
 
@@ -178,10 +175,10 @@ class CBS2Agent(AutonomousAgent):
         pixel_pred = model_pred
         # Project back to world coordinate
         model_pred = (model_pred+1)*self.img_size/2
-        steer, throt, brake, target_speed = self.get_control(model_pred, _cmd, speed)
+        steer, throt, brake = self.get_control(model_pred, _cmd, speed)
 
         #self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, cmd=_cmd))
-        self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred))
+        self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, cmd=_cmd, pred=model_pred))
 
         if len(self.vizs) > 1000:
             self.flush_data()
@@ -205,7 +202,7 @@ class CBS2Agent(AutonomousAgent):
 
         target_speed = np.linalg.norm(targets[:-1] - targets[1:], axis=1).mean() / (self.gap * DT)
 
-        target_speed = np.clip(target_speed, 0.0, 5)
+        target_speed = np.clip(target_speed, 0.0, 5.0)
 
         c, r = ls_circle(targets)
         n = self.steer_points.get(str(_cmd), 1)
@@ -217,7 +214,7 @@ class CBS2Agent(AutonomousAgent):
         w = [closest[0], closest[1], 0.0]
         alpha = common.signed_angle(v, w)
 
-        steer = self.turn_control.run_step(alpha, _cmd)/3
+        steer = self.turn_control.run_step(alpha, _cmd)
         throttle = self.speed_control.step(acceleration)
         brake = 0.0
 
@@ -239,13 +236,7 @@ class CBS2Agent(AutonomousAgent):
                 }
 
         steer, throt, brake = self.postprocess(steer, throttle, brake)
-
-        if(target_speed<3):
-            print(f'*tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
-        else:
-            print(f'tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
-
-        return steer, throt, brake, target_speed
+        return steer, throt, brake
 
     def postprocess(self, steer, throttle, brake):
         control = carla.VehicleControl()
