@@ -42,6 +42,6 @@
             "world_y": 1.4
         },
         "input_channel": 13,
-        "model_path": "../reference/ref_teacher/teacher-100.th"
+        "model_path": "../reference/ref_teacher/teacher-50.th"
     }
 }
