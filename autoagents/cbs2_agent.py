@@ -271,10 +271,10 @@ class CBS2Agent(AutonomousAgent):
 
         steer, throt, brake = self.postprocess(steer, throttle, brake)
 
-        if(target_speed<3):
-            print(f'*tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
-        else:
-            print(f'tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
+        # if(target_speed<3):
+        #     print(f'*tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
+        # else:
+        #     print(f'tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
 
         return steer, throt, brake, target_speed
 
