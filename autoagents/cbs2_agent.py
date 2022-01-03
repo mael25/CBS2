@@ -101,7 +101,10 @@ class CBS2Agent(AutonomousAgent):
 
         self.speed_control = PIDController(K_P=.8, K_I=.08, K_D=0.)
 
-        self.engine_brake_threshold = 2.0
+        self.engine_brake_threshold_straight = 3.8
+        self.brake_threshold_straight = 3
+
+        #self.engine_brake_threshold = 2.0
         self.brake_threshold = 2.0
 
         self.last_brake = -1
@@ -163,6 +166,14 @@ class CBS2Agent(AutonomousAgent):
         # if timestamp <3:
         #     speed=3.0
 
+        # Issue when zero speed fed to network: waypoints lead to a stop.
+        # Thus, feed slightly higher speed to network so that it is just able to move
+        # If there is an obstacle, this offset is not enough to make it move
+        if speed < 2:
+            adapted_speed = speed + 1.6
+        else:
+            adapted_speed = speed
+
         _cmd = cmd.value
         command = self.one_hot[_cmd - 1]
 
@@ -172,13 +183,13 @@ class CBS2Agent(AutonomousAgent):
 
         #_speed = torch.tensor([speed]).float().to(self.device) #original
         #_speed = torch.tensor([speed+1.6]).float().to(self.device) #29dec
-        _speed = torch.tensor([np.clip(speed+1.6, 0.0, 5.0)]).float().to(self.device) #30dec
+        _speed = torch.tensor([adapted_speed]).float().to(self.device)
 
         with torch.no_grad():
             _rgb = self.transform(rgb).to(self.device).unsqueeze(0)
             #_speed = torch.FloatTensor([speed]).to(self.device) #original
-            #_speed = torch.FloatTensor([speed+1.6]).to(self.device) #29dec
-            _speed = torch.FloatTensor([np.clip(speed+1.6, 0.0, 5.0)]).to(self.device)
+            #_speed = torch.FloatTensor([speed+1.6]).to(self.device)
+            _speed = torch.FloatTensor([adapted_speed]).to(self.device)
             _command = command.to(self.device).unsqueeze(0)
             model_pred = self.model(_rgb, _speed, _command)
 
@@ -232,12 +243,23 @@ class CBS2Agent(AutonomousAgent):
 
         # Slow or stop.
 
-        if target_speed <= self.engine_brake_threshold:
-            steer = 0.0
-            throttle = 0.0
+        # if target_speed <= self.engine_brake_threshold:
+        #     steer = 0.0
+        #     throttle = 0.0
+        #
+        # if target_speed <= self.brake_threshold:
+        #     brake = 1.0
 
-        if target_speed <= self.brake_threshold:
-            brake = 1.0
+        # As we go faster when we go straight, we have different stopping threshold
+        if np.abs(steer)<0.05:
+            if target_speed <= self.engine_brake_threshold_straight:
+                throttle = 0.0
+            if target_speed <= self.brake_threshold_straight:
+                brake = 1.0
+
+        elif target_speed <= self.brake_threshold:
+                throttle = 0.0
+                brake = 1.0
 
         self.debug = {
                 # 'curve': curve,

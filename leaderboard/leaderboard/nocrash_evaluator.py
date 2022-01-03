@@ -186,7 +186,7 @@ class NoCrashEvaluator(object):
         CarlaDataProvider.set_client(self.client)
         CarlaDataProvider.set_world(self.world)
         CarlaDataProvider.set_traffic_manager_port(int(args.trafficManagerPort))
-        
+
         self.traffic_manager.set_synchronous_mode(True)
         self.traffic_manager.set_random_device_seed(int(args.trafficManagerSeed))
 
@@ -278,7 +278,7 @@ class NoCrashEvaluator(object):
             scenario = NoCrashEvalScenario(
                 world=self.world,
                 agent=self.agent_instance,
-                start_idx=start_idx, 
+                start_idx=start_idx,
                 target_idx=target_idx,
                 weather_idx=weather_idx,
                 traffic_idx=traffic_idx,
@@ -328,11 +328,12 @@ class NoCrashEvaluator(object):
         try:
             print("\033[1m> Stopping the route\033[0m")
             self.manager.stop_scenario()
-            
-            route_completion, lights_ran, duration = self.manager.get_nocrash_diagnostics()
+
+            route_completion, lights_ran, duration, outside_lane, collision, collision_vehicle, collision_walker, in_route, blocked = self.manager.get_nocrash_diagnostics()
             self.statistics_manager.log(
-                self.town, traffic_idx, weather_idx, start_idx, target_idx, 
-                route_completion, lights_ran, duration
+                self.town, traffic_idx, weather_idx, start_idx, target_idx,
+                route_completion, lights_ran, duration, outside_lane, collision,
+                collision_vehicle, collision_walker, in_route, blocked
             )
 
             if args.record:

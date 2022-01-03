@@ -223,20 +223,44 @@ class ScenarioManager(object):
             global_result = '\033[91m'+'FAILURE'+'\033[0m'
 
         ResultOutputProvider(self, global_result)
-        
+
     def get_nocrash_diagnostics(self):
-        
+
         route_completion = None
         lights_ran = None
+        # Added
+        outside_lane = None
+        collision = None
+        collision_vehicle = None
+        collision_walker = None
+        in_route = None
+        blocked = None
         duration = round(self.scenario_duration_game, 2)
-        
+
         for criterion in self.scenario.get_criteria():
             actual_value = criterion.actual_value
+            result = criterion.test_status
             name = criterion.name
-            
+
             if name == 'RouteCompletionTest':
                 route_completion = float(actual_value)
             elif name == 'RunningRedLightTest':
                 lights_ran = int(actual_value)
-        
-        return route_completion, lights_ran, duration
+            ############################################3#######################
+            # Added criterion to log
+            elif name == 'OutsideRouteLanesTest':
+                outside_lane = float(actual_value)
+            elif name == 'CollisionTest':
+                actor_type = criterion.other_actor_type
+                if actor_type is None:
+                    collision = result
+                elif actor_type == 'vehicle':
+                    collision_vehicle = result
+                elif actor_type == 'walker':
+                    collision_walker = result
+            elif name == 'InRouteTest':
+                in_route = result
+            elif name == 'AgentBlockedTest': # below 0.1m/s for 180s
+                blocked = result
+
+        return route_completion, lights_ran, duration, outside_lane, collision, collision_vehicle, collision_walker, in_route, blocked

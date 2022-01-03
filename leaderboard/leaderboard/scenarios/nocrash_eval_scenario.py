@@ -38,12 +38,12 @@ WEATHERS = {
 
 class NoCrashEvalScenario(RouteScenario):
     category = "NoCrashEvalScenario"
-    
+
     def __init__(self, world, agent, start_idx, target_idx, weather_idx, traffic_idx, debug_mode=0, criteria_enable=True):
 
         # Overwrite
         self.list_scenarios = []
-        
+
         self.town_name = world.get_map().name
         self.weather_idx = weather_idx
         self.start_idx = start_idx
@@ -57,7 +57,7 @@ class NoCrashEvalScenario(RouteScenario):
 
         ego_vehicle = self._update_ego_vehicle()
         traffic_lvl = ['Empty', 'Regular', 'Dense'][traffic_idx]
-        
+
         BasicScenario.__init__(self, name=f'NoCrash_{self.town_name}_{traffic_idx}_w{weather_idx}_s{start_idx}_t{target_idx}',
             ego_vehicles=[ego_vehicle],
             config=None,
@@ -68,7 +68,7 @@ class NoCrashEvalScenario(RouteScenario):
         )
 
         self.list_scenarios = []
-        
+
     def _set_route(self, hop_resolution=1.0):
 
         world = CarlaDataProvider.get_world()
@@ -89,7 +89,7 @@ class NoCrashEvalScenario(RouteScenario):
         self.agent.set_global_plan(gps_route, self.route)
 
         self.timeout = self._estimate_route_timeout()
-        
+
     def _initialize_actors(self, config):
         """
         Set other_actors to the superset of all scenario actors
@@ -99,7 +99,7 @@ class NoCrashEvalScenario(RouteScenario):
             'Town01': [0,20,100],
             'Town02': [0,15,70],
         }
-        
+
         ped_amounts = {
             'Town01': [0,50,200],
             'Town02': [0,50,150],
@@ -133,9 +133,9 @@ class NoCrashEvalScenario(RouteScenario):
             if walker_bp.has_attribute('is_invincible'):
                 walker_bp.set_attribute('is_invincible', 'false')
             batch.append(carla.command.SpawnActor(walker_bp, spawn_point))
-        
+
         pedestrians = CarlaDataProvider.handle_actor_batch(batch)
-        
+
         batch = []
         walker_controller_bp = CarlaDataProvider._blueprint_library.find('controller.ai.walker')
         for pedestrian in pedestrians:
@@ -149,7 +149,7 @@ class NoCrashEvalScenario(RouteScenario):
             controller.start()
             controller.go_to_location(CarlaDataProvider.get_world().get_random_location_from_navigation())
             controller.set_max_speed(1.2 + random.random())
-            
+
         for actor in itertools.chain(pedestrians, pedestrian_controllers):
             if actor is None:
                 continue
@@ -162,10 +162,10 @@ class NoCrashEvalScenario(RouteScenario):
     def _initialize_environment(self, world):
 
         world.set_weather(WEATHERS[self.weather_idx])
-        
+
     def _setup_scenario_trigger(self, config):
         pass
-    
+
     def _setup_scenario_end(self, config):
         """
         This function adds and additional behavior to the scenario, which is triggered
@@ -174,7 +174,7 @@ class NoCrashEvalScenario(RouteScenario):
         The function can be overloaded by a user implementation inside the user-defined scenario class.
         """
         pass
-    
+
     def _create_test_criteria(self):
         """
         """
@@ -183,11 +183,15 @@ class NoCrashEvalScenario(RouteScenario):
 
         collision_criterion = CollisionTest(self.ego_vehicles[0], terminate_on_failure=True)
 
+        # Adding criterion to separate the kind of collisions (no need to terminate on failure as already done above)
+        collision_criterion_vehicle = CollisionTest(self.ego_vehicles[0], terminate_on_failure=False, other_actor_type='vehicle')
+        collision_criterion_walker = CollisionTest(self.ego_vehicles[0], terminate_on_failure=False, other_actor_type='walker')
+
         route_criterion = InRouteTest(self.ego_vehicles[0],
                                       route=route,
                                       offroad_max=30,
                                       terminate_on_failure=True)
-                                      
+
         completion_criterion = RouteCompletionTest(self.ego_vehicles[0], route=route)
 
         outsidelane_criterion = OutsideRouteLanesTest(self.ego_vehicles[0], route=route)
@@ -205,6 +209,10 @@ class NoCrashEvalScenario(RouteScenario):
         criteria.append(completion_criterion)
         criteria.append(outsidelane_criterion)
         criteria.append(collision_criterion)
+        # Added
+        criteria.append(collision_criterion_vehicle)
+        criteria.append(collision_criterion_walker)
+
         criteria.append(red_light_criterion)
         criteria.append(stop_criterion)
         criteria.append(route_criterion)

@@ -14,7 +14,7 @@ class NoCrashEvalRunner():
         args.trafficManagerPort = tm_port
         args.debug = debug
         args.record = ''
-        
+
         args.town = town
         args.weather = weather
 
@@ -26,7 +26,7 @@ class NoCrashEvalRunner():
 
 
 class StatisticsManager:
-    
+
     headers = [
         'town',
         'traffic',
@@ -36,17 +36,23 @@ class StatisticsManager:
         'route_completion',
         'lights_ran',
         'duration',
+        'outside_lane',
+        'collision',
+        'collision_vehicle',
+        'collision_walker',
+        'in_route',
+        'blocked'
     ]
-    
+
     def __init__(self, args):
-        
+
         self.finished_tasks = {
             'Town01': {},
             'Town02': {}
         }
-        
+
         logdir = args.agent_config.replace('.yaml', '.csv')
-        
+
         if args.resume and os.path.exists(logdir):
             self.load(logdir)
             self.csv_file = open(logdir, 'a')
@@ -69,22 +75,34 @@ class StatisticsManager:
                     float(row['route_completion']),
                     int(row['lights_ran']),
                     float(row['duration']),
+                    float(row['outside_lane']),
+                    str(row['collision']),
+                    str(row['collision_vehicle']),
+                    str(row['collision_walker']),
+                    str(row['in_route']),
+                    str(row['blocked'])
                 ]
-    
-    def log(self, town, traffic, weather, start, target, route_completion, lights_ran, duration):
+
+    def log(self, town, traffic, weather, start, target, route_completion, lights_ran, duration, outside_lane, collision, collision_vehicle, collision_walker, in_route, blocked):
         self.csv_writer.writerow({
-            'town'            : town,
-            'traffic'         : traffic,
-            'weather'         : weather,
-            'start'           : start,
-            'target'          : target,
-            'route_completion': route_completion,
-            'lights_ran'      : lights_ran,
-            'duration'        : duration,
+            'town'             : town,
+            'traffic'          : traffic,
+            'weather'          : weather,
+            'start'            : start,
+            'target'           : target,
+            'route_completion' : route_completion,
+            'lights_ran'       : lights_ran,
+            'duration'         : duration,
+            'outside_lane'     : outside_lane,
+            'collision'        : collision,
+            'collision_vehicle': collision_vehicle,
+            'collision_walker' : collision_walker,
+            'in_route'         : in_route,
+            'blocked'          : blocked,
         })
 
         self.csv_file.flush()
-        
+
     def is_finished(self, town, route, weather, traffic):
         start, target = route
         key = (int(traffic), int(weather), int(start), int(target))

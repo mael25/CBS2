@@ -6,6 +6,8 @@ def main(args):
         args.agent_config = 'results/config_nocrash_fpn.yaml'
     elif(args.mod == 'ppm'):
         args.agent_config = 'results/config_nocrash_ppm.yaml'
+    elif(args.mod == 'lbc'):
+        args.agent_config = 'results/config_nocrash_lbc.yaml'
     else:
         args.agent_config = 'results/config_nocrash_original.yaml'
 
