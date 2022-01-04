@@ -27,10 +27,10 @@ seg_weight: 0.05
 wide_crop_top: 48
 narr_crop_bottom: 16
 imagenet_pretrained: True
-log_wandb: False
+log_wandb: True
 noise_collect: False
 use_narr_cam: False
 multi_cam: True
 all_speeds: True
 main_model_dir: cbs2/reference/ref_wor/main_model_16.th
-rgb_model_dir: cbs2/reference/ref_student_original_final/model-12.th
+rgb_model_dir: cbs2/reference/ref_student_original_final/model-42.th

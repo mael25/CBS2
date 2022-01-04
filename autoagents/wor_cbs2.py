@@ -228,10 +228,10 @@ class ImageAgent(AutonomousAgent):
         steer = float(self.steers @ torch.softmax(steer_logit, dim=0))
         throt = float(self.throts @ torch.softmax(throt_logit, dim=0))
 
-        steer, throt, brake = self.post_process(steer, throt, brake_prob, spd, cmd_value)
+        steer_wor, throt_wor, brake_wor = self.post_process(steer, throt, brake_prob, spd, cmd_value)
 
 
-        rgb = np.concatenate([wide_rgb, narr_rgb[...,:3]], axis=1)
+        rgb_wor = np.concatenate([wide_rgb, narr_rgb[...,:3]], axis=1)
 
         ########################################################################
         #CBS
@@ -245,10 +245,13 @@ class ImageAgent(AutonomousAgent):
         # Issue when zero speed fed to network: waypoints lead to a stop.
         # Thus, feed slightly higher speed to network so that it is just able to move
         # If there is an obstacle, this offset is not enough to make it move
-        if speed < 2:
-            adapted_speed = speed + 1.6
-        else:
-            adapted_speed = speed
+
+
+        # if speed < 2:
+        #     adapted_speed = speed + 1.6
+        # else:
+        #     adapted_speed = speed
+        adapted_speed = 4.7
 
         _cmd = cmd.value
         command = self.one_hot[_cmd - 1]
@@ -279,14 +282,15 @@ class ImageAgent(AutonomousAgent):
         self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred))
         ########################################################################
 
-        #self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), spd, cmd=cmd_value+1))
+        #self.vizs.append(visualize_obs(rgb_wor, 0, (steer, throt, brake), spd, cmd=cmd_value+1))
 
-        if len(self.vizs) > 2000:
+        if len(self.vizs) > 3000:
             self.flush_data()
 
         self.num_frames += 1
 
-        return carla.VehicleControl(steer=steer, throttle=throt, brake=brake)
+        # We send the Wor controls but plot CBS2 predictions and infos
+        return carla.VehicleControl(steer=steer_wor, throttle=throt_wor, brake=brake_wor)
 
     def _lerp(self, v, x):
         D = v.shape[0]
