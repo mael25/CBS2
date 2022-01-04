@@ -1,0 +1,33 @@
+{
+    "data_args": {
+        "angle_jitter": 5,
+        "batch_size": 64,
+        "cmd_biased": false,
+        "combine_seg": false,
+        "crop_x_jitter": 15,
+        "crop_y_jitter": 5,
+        "dataset_dir": "../../dataset/final",
+        "gap": 5,
+        "max_frames": "None",
+        "n_step": 5,
+        "scale": 1.15,
+        "segmentation": true
+    },
+    "device": "cuda",
+    "height": 80,
+    "log_dir": "f_teacher_tl",
+    "log_iterations": 1000,
+    "max_epoch": "100",
+    "model_args": {
+        "backbone": "resnet18",
+        "input_channel": 5,
+        "model": "segmentation_thomas"
+    },
+    "optimizer_args": {
+        "dynamic": true,
+        "lr": 0.001,
+        "patience": 50
+    },
+    "resume": false,
+    "width": 192
+}
