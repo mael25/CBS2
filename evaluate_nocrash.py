@@ -8,6 +8,8 @@ def main(args):
         args.agent_config = 'results/config_nocrash_ppm.yaml'
     elif(args.mod == 'lbc'):
         args.agent_config = 'results/config_nocrash_lbc.yaml'
+    elif(args.mod == 'worcbs2'):
+        args.agent_config = 'results/config_nocrash_wor_cbs2.yaml'
     else:
         args.agent_config = 'results/config_nocrash_original.yaml'
 

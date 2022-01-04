@@ -1,0 +1,2 @@
+town,traffic,weather,start,target,route_completion,lights_ran,duration,outside_lane,collision,collision_vehicle,collision_walker,in_route,blocked
+Town02,0,10,66,19,38.28,1,229.55,2.79,SUCCESS,SUCCESS,SUCCESS,SUCCESS,FAILURE
