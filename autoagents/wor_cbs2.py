@@ -251,7 +251,7 @@ class ImageAgent(AutonomousAgent):
         #     adapted_speed = speed + 1.6
         # else:
         #     adapted_speed = speed
-        adapted_speed = 4.7
+        adapted_speed = 0.0
 
         _cmd = cmd.value
         command = self.one_hot[_cmd - 1]
@@ -290,7 +290,7 @@ class ImageAgent(AutonomousAgent):
         self.num_frames += 1
 
         # We send the Wor controls but plot CBS2 predictions and infos
-        return carla.VehicleControl(steer=steer_wor, throttle=throt_wor, brake=brake_wor)
+        return carla.VehicleControl(steer=steer_wor, throttle=np.max([throt_wor, 0.2]), brake=0.0)
 
     def _lerp(self, v, x):
         D = v.shape[0]

@@ -33,4 +33,5 @@ use_narr_cam: False
 multi_cam: True
 all_speeds: True
 main_model_dir: cbs2/reference/ref_wor/main_model_16.th
-rgb_model_dir: cbs2/reference/ref_student_original_final/model-42.th
+rgb_model_dir: cbs2/reference/ref_student_original_final/model-50.th
+#rgb_model_dir: cbs2/reference/thomas/model-5.th
