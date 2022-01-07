@@ -287,9 +287,9 @@ class BirdViewDataset(Dataset):
 
         output = []
         #if tl or vehicle or walker:
-        #if tl: # ---> This seems the best approach. Making waypoints lead to a stop when speed < 0 makes a never moving agent
         #if tl or (speed < 0.005):
-        if speed < 0.005:
+        #if speed < 0.005: # Version used for final results
+        if tl: # ---> This seems the best approach. Making waypoints lead to a stop when speed < 0 makes a never moving agent
             vehicle_proj = self.project_vehicle(world_x, world_y, world_z, ori_x, ori_y, ori_z)
             output = np.array([vehicle_proj[0] for _ in range(self.n_step)])
             if tl:

@@ -74,7 +74,8 @@ class LocationLoss(torch.nn.Module):
         pred_locations = pred_locations/(0.5*self._img_size) - 1
         teac_locations = teac_locations / (0.5 * self._img_size) - 1
 
-        return torch.mean(torch.abs(pred_locations - teac_locations), dim=(1,2,3))
+        #return torch.mean(torch.abs(pred_locations - teac_locations), dim=(1,2,3)) #L1
+        return torch.mean(torch.pow((pred_locations - teac_locations),2), dim=(1,2,3)) #L2 TEMPORARY TEST - 06/01/2022
 
 def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _teac_locations, wp_method, size=8):
     import cv2
@@ -88,7 +89,8 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
 
     images = list()
 
-    for i in range(min(birdview.shape[0],size)):
+    #for i in range(min(birdview.shape[0],size)):
+    for i in range(min(birdview.shape[0],size)): # TEMPORARY SHOWS THE ONE WITH THE BIGGER LOSS
         loss_i = loss[i].sum()
         canvas = np.uint8(_numpy(birdview[i]).transpose(1, 2, 0) * 255).copy()
         canvas = cu.visualize_birdview(canvas)
@@ -140,7 +142,8 @@ def _log_visuals(rgb_image, birdview, speed, command, loss, _pred_locations, _te
 
         images.append((loss[i].item(), _stick_together(rgb, canvas)))
 
-    return [x[1] for x in images]
+    #return [x[1] for x in images]
+    return [x[1] for x in sorted(images, reverse=True, key=lambda x: x[0])] # Plot the ones with bigger loss
 
 
 def repeat(a, repeats, dim=0):
