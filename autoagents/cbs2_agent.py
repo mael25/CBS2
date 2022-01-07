@@ -169,10 +169,12 @@ class CBS2Agent(AutonomousAgent):
         # Issue when zero speed fed to network: waypoints lead to a stop.
         # Thus, feed slightly higher speed to network so that it is just able to move
         # If there is an obstacle, this offset is not enough to make it move
-        if speed < 2:
-            adapted_speed = speed + 1.6
-        else:
-            adapted_speed = speed
+
+        # if speed < 2:
+        #     adapted_speed = speed + 1.6
+        # else:
+        #     adapted_speed = speed
+        adapted_speed = speed
 
         _cmd = cmd.value
         command = self.one_hot[_cmd - 1]
