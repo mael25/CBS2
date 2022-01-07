@@ -85,7 +85,8 @@ class LocationLoss(torch.nn.Module):
     def forward(self, pred_locations, locations):
         locations = locations.to(pred_locations.device)
         locations = locations/(0.5*self._img_size) - 1
-        return torch.mean(torch.abs(pred_locations - locations), dim=(1,2))
+        #return torch.mean(torch.abs(pred_locations - locations), dim=(1,2)) L1
+        return torch.mean(torch.pow((pred_locations - locations),2), dim=(1,2)) # L2 - TEMPORARY TEST 06/01/2022
 
 def _log_visuals(rgb_image, birdview, speed, command, loss, pred_locations, teac_locations, _teac_locations, wp_method, size=32):
     import cv2

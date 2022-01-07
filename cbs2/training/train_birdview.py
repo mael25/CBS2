@@ -41,7 +41,8 @@ class LocationLoss(torch.nn.Module):
         if choice == 'l1':
             self.loss = lambda a, b: torch.mean(torch.abs(a - b), dim=(1, 2))
         elif choice == 'l2':
-            self.loss = torch.nn.MSELoss()
+            #self.loss = torch.nn.MSELoss()
+            self.loss = lambda a, b: torch.mean(torch.pow((a - b),2), dim=(1, 2))
         else:
             raise NotImplemented("Unknown loss: %s" % choice)
 
@@ -186,7 +187,8 @@ def train(config):
     bzu.log.save_config(config)
 
     data_train, data_val = load_data(**config['data_args'])
-    criterion = LocationLoss(w=config['width'], h=config['height'],choice='l1')
+    #criterion = LocationLoss(w=config['width'], h=config['height'],choice='l1')
+    criterion = LocationLoss(w=config['width'], h=config['height'],choice='l2') #TEMPORARY 06/01/2022
     net = BirdViewPolicyModelSS(config['model_args']['backbone'], config[
         'model_args']['input_channel'], seg=parsed.segmentation).to(config['device'])
 
