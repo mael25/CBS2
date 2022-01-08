@@ -1,0 +1,47 @@
+{
+    "agent_args": {
+        "camera_args": {
+            "fixed_offset": 4.0,
+            "fov": 90,
+            "h": 160,
+            "w": 384,
+            "world_y": 1.4
+        }
+    },
+    "data_args": {
+        "augment": "super_hard",
+        "batch_aug": 1,
+        "batch_size": 96,
+        "dataset_dir": "../../dataset/final",
+        "gap": 5,
+        "n_step": 5,
+        "num_workers": 16
+    },
+    "device": "cuda",
+    "log_dir": "s1_original_fpn",
+    "log_iterations": 1000,
+    "max_epoch": "100",
+    "model_args": {
+        "backbone": "resnet34",
+        "fpn": true,
+        "imagenet_pretrained": true,
+        "model": "image_ss",
+        "ppm_bins": "None"
+    },
+    "optimizer_args": {
+        "lr": 0.0001
+    },
+    "phase0_ckpt": "s0_original_fpn/model-2.th",
+    "speed_noise": 0.0,
+    "teacher_args": {
+        "camera_args": {
+            "fixed_offset": 4.0,
+            "fov": 120,
+            "h": 160,
+            "w": 384,
+            "world_y": 1.4
+        },
+        "input_channel": 13,
+        "model_path": "../reference/ref_teacher_l2/model-50.th"
+    }
+}
