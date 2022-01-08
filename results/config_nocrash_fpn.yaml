@@ -3,6 +3,7 @@ camera_z: 2.4
 log_wandb: True
 
 # Location of student model to evaluate (evaluate_nocrash.py)
-rgb_model_dir: cbs2/reference/ref_stud_fpn/fpn-50.th
+#rgb_model_dir: cbs2/reference/ref_stud_fpn/fpn-50.th
+rgb_model_dir: cbs2/reference/ref_stud_fpn_l2/model-100.th
 
 fpn: True
