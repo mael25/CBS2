@@ -102,7 +102,7 @@ class CBS2Agent(AutonomousAgent):
         self.speed_control = PIDController(K_P=.8, K_I=.08, K_D=0.)
 
         self.engine_brake_threshold_straight = 3.8
-        self.brake_threshold_straight = 3
+        self.brake_threshold_straight = 3.55
 
         #self.engine_brake_threshold = 2.0
         self.brake_threshold = 2.0
