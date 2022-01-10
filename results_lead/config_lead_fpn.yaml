@@ -1,9 +1,9 @@
 camera_x: 1.5
 camera_z: 2.4
-log_wandb: True
+log_wandb: False
 
-# Location of student model to evaluate (evaluate_nocrash.py)
-rgb_model_dir: cbs0/reference/fpn-model-XX.th
+# Location of student model to evaluate (evaluate.py)
+rgb_model_dir: cbs2/reference/ref_stud_fpn_l2/model-100.th
 
 fpn: True
 

@@ -1,11 +1,11 @@
 camera_x: 1.5
 camera_z: 2.4
-log_wandb: True
+log_wandb: False
 
-# Location of student model to evaluate (evaluate_nocrash.py)
-rgb_model_dir: cbs0/reference/ppm-model-XX.th
+# Location of student model to evaluate (evaluate.py)
+rgb_model_dir: cbs2/reference/ref_stud_ppm_l2/model-90.th
 
 # Bins for adaptive pooling of PPM (assumes square bins i.e. 1x1, 2x2, 3x3, 6x6)
-ppm_bins: [1,2,3,6]
+ppm_bins: 1-2-3-6
 
 
