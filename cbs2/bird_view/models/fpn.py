@@ -12,7 +12,7 @@ from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 class FPN(nn.Module):
     def __init__(self):
-        print('\n---------------------WITH FPN-----------------------\n')
+        #print('\n---------------------WITH FPN-----------------------\n')
         super(FPN, self).__init__()
         self.fpn_extractor = resnet_fpn_backbone('resnet34', pretrained=True)
         self.downsamplers = []

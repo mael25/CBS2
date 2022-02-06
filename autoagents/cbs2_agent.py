@@ -23,6 +23,12 @@ from cbs2.bird_view.models.image import PPM, ImagePolicyModelSS
 
 import torchvision.transforms as transforms
 
+import os, sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(currentdir)
+
+from guided_back_prop_cbs2 import gb_script
+
 STEPS = 5
 DT = 0.1
 
@@ -42,16 +48,20 @@ class CBS2Agent(AutonomousAgent):
         with open(path_to_conf_file, 'r') as f:
             config = yaml.safe_load(f)
 
+        self.model_name = 'Original'
         for key, value in config.items():
             setattr(self, key, value)
 
         if hasattr(self, 'ppm_bins'):
             self.ppm_bins = list(map(int, self.ppm_bins.split("-"))) # "1-2-3-6" --> [1, 2, 3, 6]
+            self.model_name = 'PPM'
         else:
             self.ppm_bins = None
 
         if not hasattr(self, 'fpn'):
             self.fpn = False
+        else:
+            self.model_name = 'FPN'
 
         self.device = torch.device('cuda')
         self.vizs = []
@@ -59,9 +69,6 @@ class CBS2Agent(AutonomousAgent):
 
         if self.log_wandb:
             wandb.init(project= path_to_conf_file.split('/')[-1].split('.')[0])
-            #if hasattr(self, 'route'):
-                #wandb.run.name = self.route + '_' + wandb.run.name
-
 
 ################################################################################
 # CBS
@@ -161,37 +168,16 @@ class CBS2Agent(AutonomousAgent):
 
         speed = ego.get('spd')
 
-        # Test 29 dec - outdated, replaced by offset given only to the network
-        #speed = speed +1.6
-        # if timestamp <3:
-        #     speed=3.0
-
-        # Issue when zero speed fed to network: waypoints lead to a stop.
-        # Thus, feed slightly higher speed to network so that it is just able to move
-        # If there is an obstacle, this offset is not enough to make it move
-
-        # if speed < 2:
-        #     adapted_speed = speed + 1.6
-        # else:
-        #     adapted_speed = speed
-        adapted_speed = speed
-
         _cmd = cmd.value
         command = self.one_hot[_cmd - 1]
 
         _rgb = torch.tensor(_rgb[None]).float().permute(0,3,1,2).to(self.device)
-        #print(f'RGB size: {_rgb.size()}')
 
-
-        #_speed = torch.tensor([speed]).float().to(self.device) #original
-        #_speed = torch.tensor([speed+1.6]).float().to(self.device) #29dec
-        _speed = torch.tensor([adapted_speed]).float().to(self.device)
+        _speed = torch.tensor([speed]).float().to(self.device)
 
         with torch.no_grad():
             _rgb = self.transform(rgb).to(self.device).unsqueeze(0)
-            #_speed = torch.FloatTensor([speed]).to(self.device) #original
-            #_speed = torch.FloatTensor([speed+1.6]).to(self.device)
-            _speed = torch.FloatTensor([adapted_speed]).to(self.device)
+            _speed = torch.FloatTensor([speed]).to(self.device)
             _command = command.to(self.device).unsqueeze(0)
             model_pred = self.model(_rgb, _speed, _command)
 
@@ -201,11 +187,21 @@ class CBS2Agent(AutonomousAgent):
         model_pred = (model_pred+1)*self.img_size/2
         steer, throt, brake, target_speed = self.get_control(model_pred, _cmd, speed)
 
+        # Plot RGB image with info
         #self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, cmd=_cmd))
-        self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred))
 
-        if len(self.vizs) > 1000:
-            self.flush_data()
+        # Plot RGB image with info + back prop viz
+        rgb_viz = visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred)
+        _speed = torch.FloatTensor([speed]).to(self.device)
+        _command = command.to(self.device).unsqueeze(0)
+        guided_back_prop_viz = gb_script.get_gb(rgb, self.model_name, _speed, _command)
+        canvas = np.hstack((rgb_viz, guided_back_prop_viz))
+        self.vizs.append(canvas)
+
+
+        #Flush every 10k frames (instead of after episode finished)
+        # if len(self.vizs) > 10000:
+        #     self.flush_data()
 
         self.num_frames += 1
 
@@ -243,7 +239,7 @@ class CBS2Agent(AutonomousAgent):
         throttle = self.speed_control.step(acceleration)
         brake = 0.0
 
-        # Slow or stop.
+        # Former braking threshold handling
 
         # if target_speed <= self.engine_brake_threshold:
         #     steer = 0.0
@@ -252,6 +248,8 @@ class CBS2Agent(AutonomousAgent):
         # if target_speed <= self.brake_threshold:
         #     brake = 1.0
 
+
+        # New braking threshold handling
         # As we go faster when we go straight, we have different stopping threshold
         if np.abs(steer)<0.05:
             if target_speed <= self.engine_brake_threshold_straight:
@@ -263,8 +261,8 @@ class CBS2Agent(AutonomousAgent):
                 throttle = 0.0
                 brake = 1.0
 
+
         self.debug = {
-                # 'curve': curve,
                 'target_speed': target_speed,
                 'target': closest,
                 'locations_world': targets,
@@ -273,11 +271,6 @@ class CBS2Agent(AutonomousAgent):
 
         steer, throt, brake = self.postprocess(steer, throttle, brake)
 
-        # if(target_speed<3):
-        #     print(f'*tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
-        # else:
-        #     print(f'tg:{target_speed:.2f} spd:{speed:.2f} cmd:{_cmd} | steer:{steer:.2f}, throt:{throt:.2f}, brake:{brake:.2f}')
-
         return steer, throt, brake, target_speed
 
     def postprocess(self, steer, throttle, brake):
@@ -285,7 +278,6 @@ class CBS2Agent(AutonomousAgent):
         steer = np.clip(steer, -1.0, 1.0)
         throttle = np.clip(throttle, 0.0, 1.0)
         brake = np.clip(brake, 0.0, 1.0)
-        #control.manual_gear_shift = False
 
         return steer, throttle, brake
 
