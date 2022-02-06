@@ -68,8 +68,9 @@ def visualize_obs(rgb, yaw, control, speed, target_speed=None, cmd=None, red=Non
     6-11 waypoints
     """
     canvas = np.array(rgb[...,::-1])
-    for i in range(pred.shape[0]):
-        cv2.circle(canvas, (int(pred[i,0]), int(pred[i,1])), 2, (0,0,0), -1)
+    if pred is not None:
+        for i in range(pred.shape[0]):
+            cv2.circle(canvas, (int(pred[i,0]), int(pred[i,1])), 2, (0,0,0), -1)
     if predw is not None:
         for i in range(predw.shape[0]):
             cv2.circle(canvas, (int(predw[i,0]), int(predw[i,1])), 2, (1,0,0), -1)

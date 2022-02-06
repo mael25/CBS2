@@ -74,6 +74,7 @@ class CBS2Agent(AutonomousAgent):
 # CBS
         self.model = ImagePolicyModelSS(
             backbone='resnet34',
+            #backbone='resnet50',
             all_branch=False,
             ppm_bins=self.ppm_bins,
             fpn=self.fpn
@@ -188,7 +189,7 @@ class CBS2Agent(AutonomousAgent):
         steer, throt, brake, target_speed = self.get_control(model_pred, _cmd, speed)
 
         # Plot RGB image with info
-        self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, cmd=_cmd))
+        self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd))
 
         # Plot RGB image with info + back prop viz
         # rgb_viz = visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred)

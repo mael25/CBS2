@@ -87,7 +87,6 @@ class ResultOutputProvider(object):
             elif name == "CollisionTest":
                 actual_value = str(actual_value) + " times"
                 actor_type = criterion.other_actor_type
-                print(actor_type)
                 if actor_type is not None: # Specific actor type collision test
                     name= '--> ' + actor_type
 

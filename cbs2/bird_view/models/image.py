@@ -32,7 +32,7 @@ class ImagePolicyModelSS(common.ResnetBase):
         self.c = {
                 'resnet18': 512,
                 'resnet34': 512,
-                'resnet50': 2048
+                'resnet50': 1024 #2048
                 }[backbone]
         self.warp = warp
         self.rgb_transform = common.NormalizeV2(
@@ -51,8 +51,8 @@ class ImagePolicyModelSS(common.ResnetBase):
         ################################################################
 
         self.deconv = nn.Sequential(
-            nn.BatchNorm2d((self.c if not self.has_additional_module else 2*self.c) + 128),
-            nn.ConvTranspose2d((self.c if not self.has_additional_module else 2*self.c) + 128,256,3,2,1,1),
+            nn.BatchNorm2d((self.c if not (self.has_additional_module or backbone=='resnet50') else 2*self.c) + 128),
+            nn.ConvTranspose2d((self.c if not (self.has_additional_module or backbone=='resnet50') else 2*self.c) + 128,256,3,2,1,1),
             nn.ReLU(True),
             nn.BatchNorm2d(256),
             nn.ConvTranspose2d(256,128,3,2,1,1),

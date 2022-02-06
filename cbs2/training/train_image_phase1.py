@@ -26,6 +26,7 @@ from utils.datasets.image_lmdb import get_image as load_data
 from utils.datasets.birdview_lmdb import Location, Transform, Rotation
 
 BACKBONE = 'resnet34'
+#BACKBONE = 'resnet50'
 GAP = 5
 N_STEP = 5
 PIXELS_PER_METER = 5
@@ -339,6 +340,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_aug', type=int, default=1)
     parser.add_argument('--dataset_dir', default='/raid0/dian/carla_0.9.6_data')
     parser.add_argument('--batch_size', type=int, default=96)
+    #parser.add_argument('--batch_size', type=int, default=32) # For ResNet50 to avoid CUDA out of memory
     parser.add_argument('--speed_noise', type=float, default=0.0)
     parser.add_argument('--augment', choices=['medium', 'medium_harder', 'super_hard', 'None', 'custom'], default='super_hard')
 
