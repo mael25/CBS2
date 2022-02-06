@@ -188,15 +188,15 @@ class CBS2Agent(AutonomousAgent):
         steer, throt, brake, target_speed = self.get_control(model_pred, _cmd, speed)
 
         # Plot RGB image with info
-        #self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, cmd=_cmd))
+        self.vizs.append(visualize_obs(rgb, 0, (steer, throt, brake), speed, cmd=_cmd))
 
         # Plot RGB image with info + back prop viz
-        rgb_viz = visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred)
-        _speed = torch.FloatTensor([speed]).to(self.device)
-        _command = command.to(self.device).unsqueeze(0)
-        guided_back_prop_viz = gb_script.get_gb(rgb, self.model_name, _speed, _command)
-        canvas = np.hstack((rgb_viz, guided_back_prop_viz))
-        self.vizs.append(canvas)
+        # rgb_viz = visualize_obs(rgb, 0, (steer, throt, brake), speed, target_speed=target_speed, cmd=_cmd, pred=model_pred)
+        # _speed = torch.FloatTensor([speed]).to(self.device)
+        # _command = command.to(self.device).unsqueeze(0)
+        # guided_back_prop_viz = gb_script.get_gb(rgb, self.model_name, _speed, _command)
+        # canvas = np.hstack((rgb_viz, guided_back_prop_viz))
+        # self.vizs.append(canvas)
 
 
         #Flush every 10k frames (instead of after episode finished)
