@@ -27,6 +27,7 @@ This repository contains code from other sources
 - Modified:
   - [World on rails](https://github.com/dotchen/WorldOnRails)
   - [Cheating by Segmentation](https://github.com/thomasvanorden/LBS) (branch: segmentation)
+  - [Pytorch GradCAM](https://github.com/jacobgil/pytorch-grad-cam)
 
 
 ### Installing Carla
@@ -118,3 +119,4 @@ To evaluate a model trained with PPM or FPN, add respectively `--mod=ppm` or `--
 ```bash
 python -m evaluate_nocrash --town=<TownXX> --weather <test/train> --resume
 ```
+To visualize in the W&B logs not only the RGB image with vehicle commands overprinted but also a saliency map made using guided back propagation (implementation: modified from [Pytorch GradCAM](https://github.com/jacobgil/pytorch-grad-cam), paper: J. Springenberg, A. Dosovitskiy, T. Brox, and M. Riedmiller, [Striving for Simplicity](https://arxiv.org/abs/1412.6806): The All Convolutional Net”, Computer Vision and Pattern Recognition (CVPR), 2014), it is necessary to comment the code in `autoagents/cbs2_agent.py` at `l.191` and uncomment `l.194-l.199`.
