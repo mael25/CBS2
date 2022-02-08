@@ -29,10 +29,13 @@ class ImagePolicyModelSS(common.ResnetBase):
         if fpn:
             self.fpn = FPN()
         ################################################################
+        if self.backbone == 'resnet50':
+            self.post_conv = ReduceDim()
+        ################################################################
         self.c = {
                 'resnet18': 512,
                 'resnet34': 512,
-                'resnet50': 1024 #2048
+                'resnet50': 1024 # We directly reduce after self.conv its dimensions from 2048 to 1024
                 }[backbone]
         self.warp = warp
         self.rgb_transform = common.NormalizeV2(
@@ -51,8 +54,8 @@ class ImagePolicyModelSS(common.ResnetBase):
         ################################################################
 
         self.deconv = nn.Sequential(
-            nn.BatchNorm2d((self.c if not (self.has_additional_module or backbone=='resnet50') else 2*self.c) + 128),
-            nn.ConvTranspose2d((self.c if not (self.has_additional_module or backbone=='resnet50') else 2*self.c) + 128,256,3,2,1,1),
+            nn.BatchNorm2d((self.c if not self.has_additional_module else 2*self.c) + 128),
+            nn.ConvTranspose2d((self.c if not self.has_additional_module else 2*self.c) + 128,256,3,2,1,1),
             nn.ReLU(True),
             nn.BatchNorm2d(256),
             nn.ConvTranspose2d(256,128,3,2,1,1),
@@ -88,11 +91,13 @@ class ImagePolicyModelSS(common.ResnetBase):
         ################################################################
         if self.fpn is not None:
             h = self.fpn(image)
+        elif self.ppm is not None:
+            h = self.ppm(h)
         else:
             h = self.conv(image)
 
-        if self.ppm is not None:
-            h = self.ppm(h)
+        if self.backbone == 'resnet50':
+            h = self.post_conv(h)
         ################################################################
         b, c, kh, kw = h.size()
 
@@ -110,6 +115,25 @@ class ImagePolicyModelSS(common.ResnetBase):
             return location_pred, location_preds
 
         return location_pred
+
+# class Identity(nn.Module):
+#     def __init__(self):
+#         super(Identity, self).__init__()
+#
+#     def forward(self, x):
+#         return x
+
+class ReduceDim(nn.Module):
+    def __init__(self):
+        super(ReduceDim, self).__init__()
+        self.reduce = nn.Sequential(
+            nn.Conv2d(2048, 1024, kernel_size=1, bias=False),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        return self.reduce(x)
 
 # Only for phase 2 (not adapted fot Carla 0.9.10.1 yet). For evaluation we use autoagents/cb2_agent.py, which is adapted from this) and rollout is not yet adapted.
 # class ImageAgent(Agent):

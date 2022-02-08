@@ -24,8 +24,8 @@ from models.image import ImagePolicyModelSS
 from utils.train_util import one_hot
 from utils.datasets.image_lmdb import get_image as load_data
 
-BACKBONE = 'resnet34'
-#BACKBONE = 'resnet50'
+#BACKBONE = 'resnet34'
+BACKBONE = 'resnet50'
 GAP = 5
 N_STEP = 5
 PIXELS_PER_METER = 5
@@ -273,8 +273,8 @@ if __name__ == '__main__':
 
     # Dataset.
     parser.add_argument('--dataset_dir', default='/raid0/dian/carla_0.9.6_data')
-    parser.add_argument('--batch_size', type=int, default=96)
-    #parser.add_argument('--batch_size', type=int, default=32) # For ResNet50 to avoid CUDA out of memory
+    #parser.add_argument('--batch_size', type=int, default=96)
+    parser.add_argument('--batch_size', type=int, default=32) # For ResNet50 to avoid CUDA out of memory
     parser.add_argument('--augment', choices=['None', 'medium', 'medium_harder', 'super_hard'], default=None)
 
     # Optimizer.
